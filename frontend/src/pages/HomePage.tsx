@@ -22,7 +22,8 @@ const HomePage: React.FC = () => {
     };
 
     return (
-        <div className="container mt-5">
+        
+        <div className="container-fluid bg-light m-0 p-0" style={{ minHeight: "100vh" }} >
             <h1 className="text-center mb-4">Choose a Dataset</h1>
             <p className="text-center text-muted mb-5">
                 Select one of the predefined datasets to build your neural network.
@@ -44,6 +45,7 @@ const HomePage: React.FC = () => {
                 ))}
             </div>
         </div>
+
     );
 };
 

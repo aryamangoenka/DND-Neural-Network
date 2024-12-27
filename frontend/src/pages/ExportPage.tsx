@@ -5,7 +5,7 @@ const ExportPage: React.FC = () => {
     const { dataset } = useDataset(); // Access the dataset from React Context
 
     return (
-        <div className="container mt-5">
+        <div className="container-fluid bg-light m-0 p-0" style={{ minHeight: "100vh" }}>
             <h1 className="text-center">Export Trained Model</h1>
             <p className="text-center">
                 Selected Dataset:{" "}

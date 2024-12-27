@@ -5,7 +5,7 @@ import BuildPage from "./pages/BuildPage";
 import TrainPage from "./pages/TrainPage";
 import ExportPage from "./pages/ExportPage";
 import NavBar from "./components/NavBar";
-import "./App.css";
+
 
 const AppContent: React.FC = () => {
     const location = useLocation();
@@ -14,7 +14,7 @@ const AppContent: React.FC = () => {
     const isHomePage = location.pathname === "/";
 
     return (
-        <div className="container mt-3">
+        <div className="container-fluid mt-3">
             {/* Conditionally Render Navigation Bar */}
             {!isHomePage && <NavBar />}
 
