@@ -1,63 +1,61 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-import reactLogo from "./assets/react.svg";
-import viteLogo from "/vite.svg";
-import "./App.css";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import API_BASE_URL from "./utils/apiConfig";
+import HomePage from "./pages/HomePage";
+import BuildPage from "./pages/BuildPage";
+import NavBar from "./components/NavBar";
+import "./App.css";
 
-function App() {
-  // Existing state for your counter
-  const [count, setCount] = useState(0);
+const AppContent: React.FC = () => {
+    const [backendStatus, setBackendStatus] = useState("");
 
-  // New state for backend status
-  const [backendStatus, setBackendStatus] = useState("");
+    // Fetch backend status on component mount
+    useEffect(() => {
+        const fetchBackendStatus = async () => {
+            try {
+                const response = await axios.get(`${API_BASE_URL}/api/health`);
+                setBackendStatus(response.data.message); // Set the message from the backend
+            } catch (error) {
+                console.error("Error connecting to the backend:", error);
+                setBackendStatus("Error connecting to backend");
+            }
+        };
 
-  // Fetch backend status on component mount
-  useEffect(() => {
-    const fetchBackendStatus = async () => {
-      try {
-        const response = await axios.get(
-          `${API_BASE_URL}/api/health`
-        );
-        setBackendStatus(response.data.message); // Set the message from the backend
-      } catch (error) {
-        console.error("Error connecting to the backend:", error);
-        setBackendStatus("Error connecting to backend");
-      }
-    };
+        fetchBackendStatus();
+    }, []);
 
-    fetchBackendStatus();
-  }, []); // Empty dependency array means this runs only once when the component mounts
+    // Check if the current route is the Home Page
+    const location = useLocation();
+    const isHomePage = location.pathname === "/";
 
-  return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-      {/* New section to display the backend status */}
-      <div className="backend-status">
-        <h2>Backend Status</h2>
-        <p>{backendStatus || "Loading backend status..."}</p>
-      </div>
-    </>
-  );
-}
+    return (
+        <div className="container mt-3">
+            {/* Backend Status */}
+            <div className="alert alert-info text-center">
+                Backend Status: {backendStatus || "Checking..."}
+            </div>
+
+            {/* Conditionally Render NavBar */}
+            {!isHomePage && <NavBar />}
+
+            {/* Routes */}
+            <Routes>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/build" element={<BuildPage />} />
+                <Route path="/train" element={<div>Training Page</div>} />
+                <Route path="/export" element={<div>Export Page</div>} />
+            </Routes>
+        </div>
+    );
+};
+
+const App: React.FC = () => {
+    return (
+        <BrowserRouter>
+            <AppContent />
+        </BrowserRouter>
+    );
+};
 
 export default App;
