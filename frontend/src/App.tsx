@@ -3,6 +3,7 @@ import axios from "axios";
 import reactLogo from "./assets/react.svg";
 import viteLogo from "/vite.svg";
 import "./App.css";
+import API_BASE_URL from "./utils/apiConfig";
 
 function App() {
   // Existing state for your counter
@@ -16,7 +17,7 @@ function App() {
     const fetchBackendStatus = async () => {
       try {
         const response = await axios.get(
-          `${import.meta.env.VITE_BACKEND_URL}/api/health`
+          `${API_BASE_URL}/api/health`
         );
         setBackendStatus(response.data.message); // Set the message from the backend
       } catch (error) {
