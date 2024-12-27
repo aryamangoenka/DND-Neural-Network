@@ -1,10 +1,11 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { useDataset } from "../context/DatasetContext"; // Import the context hook
 import "../styles/HomePage.css";
-
 
 const HomePage: React.FC = () => {
     const navigate = useNavigate();
+    const { setDataset } = useDataset(); // Access the setDataset function
 
     // Predefined datasets
     const datasets = [
@@ -16,18 +17,16 @@ const HomePage: React.FC = () => {
 
     // Handle dataset selection
     const handleDatasetSelect = (dataset: string) => {
-        navigate("/build", { state: { dataset } }); // Pass the selected dataset to the Build Page
+        setDataset(dataset); // Set the dataset in the context
+        navigate("/build"); // Navigate to the Build Page
     };
 
     return (
         <div className="container mt-5">
-            {/* Page Header */}
             <h1 className="text-center mb-4">Choose a Dataset</h1>
             <p className="text-center text-muted mb-5">
                 Select one of the predefined datasets to build your neural network.
             </p>
-
-            {/* Dataset Cards */}
             <div className="row">
                 {datasets.map((dataset) => (
                     <div className="col-md-6 col-lg-3 mb-4" key={dataset.name}>
@@ -47,6 +46,5 @@ const HomePage: React.FC = () => {
         </div>
     );
 };
-
 
 export default HomePage;

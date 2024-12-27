@@ -9,7 +9,7 @@ const NavBar: React.FC = () => {
                     homepage
                 </Link>
                 <Link className="nav-link" to="/build">
-                    Build Neural Network
+                    Build 
                 </Link>
                 <Link className="nav-link" to="/train">
                     Train
