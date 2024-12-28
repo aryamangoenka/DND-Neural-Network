@@ -1,5 +1,5 @@
 import React from "react";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import HomePage from "./pages/HomePage";
 import BuildPage from "./pages/BuildPage";
 import TrainPage from "./pages/TrainPage";
@@ -8,15 +8,15 @@ import NavBar from "./components/NavBar";
 
 
 const AppContent: React.FC = () => {
-    const location = useLocation();
+    
 
     // Check if the current route is the Home Page
-    const isHomePage = location.pathname === "/";
+   
 
     return (
-        <div className="container-fluid mt-3">
+        <div className="container-fluid mt-3 m-0 p-0" style={{minHeight: "100vh"}}>
             {/* Conditionally Render Navigation Bar */}
-            {!isHomePage && <NavBar />}
+            { <NavBar />}
 
             {/* Routes */}
             <Routes>
