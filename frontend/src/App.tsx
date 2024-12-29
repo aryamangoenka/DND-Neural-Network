@@ -9,14 +9,11 @@ import NavBar from "./components/NavBar";
 
 const AppContent: React.FC = () => {
     
-
-    // Check if the current route is the Home Page
-   
-
     return (
-        <div className="container-fluid mt-3 m-0 p-0" style={{minHeight: "100vh"}}>
-            {/* Conditionally Render Navigation Bar */}
-            { <NavBar />}
+        
+        <div className="container-fluid m-0 p-0" style={{minHeight: "100vh"}}>
+            
+            
 
             {/* Routes */}
             <Routes>
@@ -32,6 +29,7 @@ const AppContent: React.FC = () => {
 const App: React.FC = () => {
     return (
         <BrowserRouter>
+        { <NavBar />}
             <AppContent />
         </BrowserRouter>
     );

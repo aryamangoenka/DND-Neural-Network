@@ -11,6 +11,7 @@ body, html {
 .container-fluid {
     padding: 0 !important;
     margin: 0 !important;
+    border: 1px solid black;
 }
 
 .row {
