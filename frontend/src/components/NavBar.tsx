@@ -6,7 +6,7 @@ const NavBar: React.FC = () => {
     return (
         <nav className="navbar">
             <div className="container d-flex justify-content-center">
-                <ul className="navbar-nav d-flex flex-row">
+                <ul className="navbar-nav d-flex flex-wrap flex-row justify-content-center">
                     {["Home", "Build", "Train", "Share"].map((label, index) => {
                         const route = label.toLowerCase() === "home" ? "/" : `/${label.toLowerCase()}`;
                         return (
