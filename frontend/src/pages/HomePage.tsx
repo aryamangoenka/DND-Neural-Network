@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDataset } from "../context/DatasetContext"; // Import the context hook
-import "../styles/HomePage.css";
+import "../styles/components/HomePage.scss"; // Import the updated SCSS
 
 const HomePage: React.FC = () => {
     const navigate = useNavigate();
@@ -28,21 +28,18 @@ const HomePage: React.FC = () => {
     };
 
     return (
-        <div className="container-fluid bg-dark d-flex align-items-center justify-content-center" style={{ minHeight: "100vh" }}>
-            <div className="text-center text-white">
-                <h1 className="mb-4">Build.Train.Share</h1>
-                <p className="text-center text-white mb-5">
-                    An Interactive DND Neural Network builder
+        <div className="container-fluid">
+            <div className="text-center">
+                <h1 className="home-title">Build.Train.Share</h1>
+                <p className="home-subtitle">
+                    An Interactive DND Neural Network Builder
                 </p>
-
-                
                 {/* Dropdown Menu */}
-                <div className="mb-4">
+                <div className="dropdown-wrapper">
                     <select
-                        className="form-select form-select-lg"
+                        className="form-select"
                         value={selectedDataset}
                         onChange={(e) => setSelectedDataset(e.target.value)}
-                        style={{ maxWidth: "400px", margin: "0 auto" }}
                     >
                         <option value="">Select Dataset</option>
                         {datasets.map((dataset) => (
@@ -52,12 +49,10 @@ const HomePage: React.FC = () => {
                         ))}
                     </select>
                 </div>
-                
                 {/* Submit Button */}
                 <button
-                    className="btn btn-secondary btn-lg"
+                    className="btn btn-secondary btn-lg proceed-button"
                     onClick={handleDatasetSelect}
-                    style={{ marginTop: "20px" }}
                 >
                     Proceed
                 </button>

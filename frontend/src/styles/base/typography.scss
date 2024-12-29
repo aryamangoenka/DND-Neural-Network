@@ -1,0 +1,19 @@
+@use "../base/variables" as vars;
+
+body {
+    font-family: Arial, sans-serif;
+    font-size: vars.$font-base;
+    line-height: 1.5;
+    color: vars.$link-color;
+    background-color: vars.$primary-color;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-weight: vars.$font-weight-bold;
+    color: vars.$link-color;
+}
+
+p {
+    margin-bottom: vars.$space-md;
+    color: vars.$link-hover-color;
+}

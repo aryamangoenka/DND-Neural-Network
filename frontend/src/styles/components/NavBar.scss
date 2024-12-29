@@ -1,0 +1,24 @@
+@use "../base/variables" as vars;
+@use "../base/mixins" as mixins;
+
+/* Navbar Styles */
+.navbar {
+    background-color: vars.$primary-color;
+    padding: vars.$space-sm 0;
+
+    .nav-link {
+        color: vars.$link-color;
+        font-size: vars.$font-base;
+        margin: 0 150px;
+        transition: color 0.3s ease;
+
+        &:hover {
+            color: vars.$link-hover-color;
+        }
+
+        &.active {
+            font-weight: bold;
+            color: vars.$active-link-color !important;
+        }
+    }
+}

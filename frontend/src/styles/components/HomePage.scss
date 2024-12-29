@@ -1,0 +1,60 @@
+@use "../base/variables" as vars; /* Use namespace for variables */
+@use "../base/mixins" as mixins;  /* Use namespace for mixins */
+
+/* Main Container */
+.container-fluid {
+    @include mixins.flex-center; /* Use mixin from the mixins namespace */
+    flex-direction: column;
+    min-height: 100vh;
+    background-color: vars.$primary-color; /* Use variable from the variables namespace */
+    color: vars.$link-color;
+    padding: vars.$space-lg;
+}
+
+/* Title Styles */
+.home-title {
+    font-size: 3rem;
+    font-weight: vars.$font-weight-bold;
+    margin-bottom: vars.$space-md;
+
+    /* Responsive Font Sizes */
+    @include mixins.responsive-font(3rem);
+}
+
+/* Subtitle Styles */
+.home-subtitle {
+    font-size: vars.$font-base;
+    color: vars.$link-hover-color;
+    margin-bottom: vars.$space-lg;
+}
+
+/* Dropdown Menu */
+.dropdown-wrapper {
+    margin-bottom: vars.$space-md;
+
+    .form-select {
+        background-color: vars.$primary-color;
+        color: vars.$link-color;
+        border: 1px solid vars.$link-hover-color;
+        max-width: 400px;
+        padding: vars.$space-sm;
+        font-size: vars.$font-base;
+
+        &:focus {
+            box-shadow: none;
+            border-color: vars.$active-link-color; /* Highlight on focus */
+        }
+    }
+}
+
+/* Button Styles */
+.proceed-button {
+    background-color: vars.$active-link-color;
+    border-color: vars.$active-link-color;
+    color: black;
+
+    &:hover {
+        background-color: light-dark(vars.$active-link-color, 10%);
+        border-color: light-dark(vars.$active-link-color, 10%);
+    }
+}

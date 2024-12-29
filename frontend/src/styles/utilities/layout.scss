@@ -1,0 +1,14 @@
+@use "../base/mixins" as mixins;
+
+.flex-center {
+    @include mixins.flex-center;
+}
+
+.flex-column {
+    display: flex;
+    flex-direction: column;
+}
+
+.full-width {
+    width: 100%;
+}

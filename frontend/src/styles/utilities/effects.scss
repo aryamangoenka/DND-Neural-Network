@@ -1,0 +1,13 @@
+@use "../base/variables" as vars;
+
+.shadow-sm {
+    box-shadow: vars.$shadow-sm;
+}
+
+.shadow-hover:hover {
+    box-shadow: vars.$shadow-hover;
+}
+
+.transition {
+    transition: all 0.3s ease;
+}
