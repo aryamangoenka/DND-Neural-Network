@@ -1,0 +1,92 @@
+@use "../base/variables" as vars;
+
+.build-page {
+    display: grid;
+    grid-template-columns: 15% 70% 15%; // Narrow sidebars, wide canvas
+    gap: 0;
+    height: 100vh; // Full viewport height
+    width: 100vw; // Full viewport width
+    background-color: vars.$card-bg-color;
+
+    .left-sidebar,
+    .right-sidebar {
+        background-color: vars.$primary-color;
+        padding: vars.$space-md;
+        color: vars.$link-color;
+        box-shadow: vars.$shadow-sm;
+        display: flex;
+        flex-direction: column;
+        gap: vars.$space-md;
+        overflow-y: auto;
+
+        h2 {
+            text-align: center;
+            color: vars.$link-hover-color;
+            font-size: vars.$font-heading;
+            margin-bottom: vars.$space-md;
+        }
+
+        button {
+            padding: vars.$space-sm vars.$space-md;
+            border: none;
+            border-radius: vars.$space-sm;
+            cursor: pointer;
+            color: vars.$link-color;
+            font-size: vars.$font-base;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+
+            &:hover {
+                background-color: vars.$link-hover-color;
+            }
+        }
+    }
+
+    .canvas {
+        background-color: #f3f3f3;
+        border: 2px dashed vars.$link-hover-color;
+        border-radius: vars.$space-sm;
+        padding: vars.$space-md;
+        position: relative;
+        overflow-y: auto; // Handle vertical overflow
+
+        .connections {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .layer {
+            position: absolute;
+            width: 120px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: vars.$link-color;
+            font-weight: bold;
+            border-radius: vars.$space-sm;
+            cursor: grab;
+            box-shadow: vars.$shadow-sm;
+        }
+    }
+
+    .right-sidebar {
+        justify-content: flex-start;
+
+        .train-button {
+            background-color: vars.$active-link-color;
+            padding: vars.$space-md;
+            border: none;
+            border-radius: vars.$space-sm;
+            font-size: vars.$font-heading;
+            color: vars.$link-color;
+            cursor: pointer;
+
+            &:hover {
+                background-color: vars.$link-hover-color;
+            }
+        }
+    }
+}
