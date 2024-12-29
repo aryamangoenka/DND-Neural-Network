@@ -1,0 +1,10 @@
+/* GlobalStyles.scss */
+@use "./base/resets";
+@use "./base/variables";
+@use "./base/mixins";
+@use "./base/typography";
+@use "./components/NavBar";
+@use "./components/HomePage";
+@use "./utilities/spacing";
+@use "./utilities/layout";
+@use "./utilities/effects";
