@@ -6,10 +6,23 @@
     background-color: vars.$primary-color;
     padding: vars.$space-sm 0;
 
+    .container {
+        flex-wrap: wrap; // Allow wrapping on small screens
+    }
+
+    .navbar-nav {
+        flex-wrap: wrap; // Allow nav items to wrap on smaller screens
+        justify-content: center; // Center align even on smaller screens
+    }
+
+    .nav-item {
+        margin: 0 vars.$space-md; // Adjust spacing for smaller screens
+    }
+
     .nav-link {
         color: vars.$link-color;
         font-size: vars.$font-base;
-        margin: 0 150px;
+        margin: 0 100px;
         transition: color 0.3s ease;
 
         &:hover {
@@ -20,5 +33,17 @@
             font-weight: bold;
             color: vars.$active-link-color !important;
         }
+    }
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .nav-link {
+        font-size: vars.$font-small; // Adjust font size for smaller screens
+    }
+
+    .navbar-nav {
+        flex-direction: column; // Stack nav items vertically
+        align-items: center; // Center align vertically
     }
 }

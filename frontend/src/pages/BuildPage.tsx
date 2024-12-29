@@ -5,7 +5,7 @@ const BuildPage: React.FC = () => {
     const { dataset } = useDataset(); // Access the dataset from React Context
 
     return (
-        <div className="container-fluid bg-light m-0 p-0" style={{ minHeight: "100vh" }}>
+        <div className="container-fluid" >
             <h1 className="text-center">Build Neural Network</h1>
             <p className="text-center">
                 Selected Dataset:{" "}

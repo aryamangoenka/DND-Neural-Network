@@ -1,23 +1,36 @@
 /* variables.scss */
 
 /* Colors */
-$primary-color: #131415;
-$link-color: #ffffff;
-$link-hover-color: #adb5bd;
-$active-link-color: #d8e21a;
-$card-bg-color: #f8f9fa;
+$primary-color: #131415;          // Background color for the navbar
+$link-color: #ffffff;             // Default link color
+$link-hover-color: #adb5bd;       // Hover color for links
+$active-link-color: #d8e21a;      // Active link color
+$card-bg-color: #f8f9fa;          // Background color for cards or additional UI components
+
+/* Responsive Breakpoints */
+$breakpoint-sm: 576px;
+$breakpoint-md: 768px;
+$breakpoint-lg: 992px;
+$breakpoint-xl: 1200px;
 
 /* Spacing */
-$space-sm: 0.5rem;
-$space-md: 1rem;
-$space-lg: 1.5rem;
-$space-xl: 2rem;
+$space-xs: 0.25rem;               // Extra small spacing
+$space-sm: 0.5rem;                // Small spacing for navbar padding
+$space-md: 1rem;                  // Medium spacing for margins/padding
+$space-lg: 1.5rem;                // Large spacing
+$space-xl: 2rem;                  // Extra large spacing
 
 /* Typography */
-$font-base: 1rem;
-$font-heading: 1.5rem;
-$font-weight-bold: 700;
+$font-small: 0.875rem;            // Small font size for mobile views
+$font-base: 1rem;                 // Base font size for links
+$font-large: 1.25rem;             // Larger font size for headings
+$font-heading: 1.5rem;            // Heading font size
+$font-weight-bold: 700;           // Bold font weight
 
 /* Shadows */
-$shadow-sm: 0 4px 8px rgba(0, 0, 0, 0.1);
-$shadow-hover: 0 4px 8px rgba(0, 0, 0, 0.2);
+$shadow-sm: 0 4px 8px rgba(0, 0, 0, 0.1);      // Subtle shadow
+$shadow-hover: 0 4px 8px rgba(0, 0, 0, 0.2);   // Hover shadow effect
+
+/* Transition Timings */
+$transition-duration: 0.3s;       // Standard transition duration
+$transition-ease: ease-in-out;    // Transition easing function
