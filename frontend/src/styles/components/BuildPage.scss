@@ -13,25 +13,39 @@
         background-color: vars.$primary-color;
         padding: vars.$space-md;
         color: vars.$link-color;
+        border-radius: 0;
         box-shadow: vars.$shadow-sm;
+        border: 2px solid blue;
         display: flex;
         flex-direction: column;
         gap: vars.$space-md;
         overflow-y: auto;
-
+        
         h2 {
             text-align: center;
-            color: vars.$link-hover-color;
+            color: white;
             font-size: vars.$font-heading;
             margin-bottom: vars.$space-md;
+            
         }
+        h2:nth-of-type(2) {
+            margin-top: vars.$space-xl; // Push the Activation Layers title further down
+        }
+        h3 {
+            text-align: center;
+            color: rgb(214, 138, 23);
+            font-size: vars.$font-heading;
+            margin-bottom: vars.$space-md;
+            
+        }
+        
 
         button {
             padding: vars.$space-sm vars.$space-md;
             border: none;
             border-radius: vars.$space-sm;
             cursor: pointer;
-            color: vars.$link-color;
+            color: black;
             font-size: vars.$font-base;
             font-weight: bold;
             transition: background-color 0.3s ease;
@@ -64,11 +78,12 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            color: vars.$link-color;
             font-weight: bold;
             border-radius: vars.$space-sm;
             cursor: grab;
             box-shadow: vars.$shadow-sm;
+            color: black !important;
+            background-color: inherit;
         }
     }
 
@@ -80,8 +95,8 @@
             padding: vars.$space-md;
             border: none;
             border-radius: vars.$space-sm;
-            font-size: vars.$font-heading;
-            color: vars.$link-color;
+            font-size: vars.$font-large;
+            color: black;
             cursor: pointer;
 
             &:hover {
@@ -90,3 +105,35 @@
         }
     }
 }
+.templates-section {
+    margin-top: 20px;
+    padding: 10px;
+    border: 1px solid #dddddd;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+
+    h2 {
+        font-size: 1.2rem;
+        color: #333333 !important;
+        text-align: center;
+    }
+
+    button {
+        display: block;
+        width: 100%;
+        margin: 10px 0;
+        padding: 10px;
+        background-color: #ffffff;
+        color: #333333;
+        border: 1px solid #cccccc;
+        border-radius: 4px;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: background-color 0.3s;
+
+        &:hover {
+            background-color: #eeeeee;
+        }
+    }
+}
+
