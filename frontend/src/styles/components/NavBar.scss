@@ -5,7 +5,7 @@
 .navbar {
     background-color: vars.$primary-color;
     padding: vars.$space-sm 0;
-    
+    border: 1px white;
     .container {
         flex-wrap: wrap; // Allow wrapping on small screens
     }
@@ -24,6 +24,7 @@
         font-size: vars.$font-base;
         margin: 0 100px;
         transition: color 0.3s ease;
+        
 
         &:hover {
             color: vars.$link-hover-color;
