@@ -5,6 +5,7 @@
     width: 100vw;
     background-color: #f9f9f9;
   
+    // Left and Right Sidebar Styles
     .left-sidebar,
     .right-sidebar {
       background-color: #1f2937; // Dark theme
@@ -58,6 +59,29 @@
         }
       }
   
+      ul {
+        list-style: none;
+        padding: 0;
+        margin: 1rem 0;
+        width: 100%;
+        text-align: left;
+  
+        li {
+          background-color: #2d3748;
+          color: white;
+          padding: 0.7rem 1rem;
+          margin-bottom: 0.5rem;
+          border-radius: 5px;
+          font-size: 1rem;
+          font-weight: bold;
+          box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.2);
+  
+          &:hover {
+            background-color: #374151;
+          }
+        }
+      }
+  
       .train-button {
         padding: 0.7rem 1.5rem;
         margin-top: 2rem;
@@ -76,6 +100,7 @@
       }
     }
   
+    // Canvas Styles
     .canvas {
       background-color: #f3f4f6;
       border-radius: 10px;
@@ -83,6 +108,51 @@
   
       .react-flow {
         height: 100%;
+      }
+    }
+  
+    // Parameters Section in Right Sidebar
+    .parameters-section {
+      margin-top: 1rem;
+      padding: 1rem;
+      background-color: #2d3748;
+      color: white;
+      border-radius: 8px;
+      box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.2);
+      width: 100%;
+  
+      h2 {
+        color: #4ade80;
+        margin-bottom: 1rem;
+      }
+  
+      p {
+        margin-bottom: 1rem;
+        font-size: 1rem;
+        color: #ffffff;
+      }
+  
+      label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-size: 1rem;
+        color: #ffffff;
+      }
+  
+      select {
+        width: 100%;
+        padding: 0.5rem;
+        margin-bottom: 1rem;
+        border-radius: 5px;
+        border: none;
+        font-size: 1rem;
+        background-color: #4ade80;
+        color: #1f2937;
+        cursor: pointer;
+  
+        &:hover {
+          background-color: #22c55e;
+        }
       }
     }
   }
