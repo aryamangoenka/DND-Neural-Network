@@ -1,11 +1,14 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useDataset } from "../context/DatasetContext"; // Import the context hook
-import "../styles/components/HomePage.scss"; // Import the updated SCSS
+import { useDataset } from "../context/DatasetContext"; // Custom context hook
+import "../styles/components/HomePage.scss"; // SCSS styling for HomePage
 
-const HomePage: React.FC = () => {
-    const navigate = useNavigate();
-    const { setDataset } = useDataset(); // Access the setDataset function
+// Define props for HomePage (empty for now, but extensible)
+interface HomePageProps {}
+
+const HomePage = ({}: HomePageProps) => {
+    const navigate = useNavigate(); // For navigation
+    const { setDataset } = useDataset(); // Access global dataset state management
 
     // Predefined datasets
     const datasets = [
@@ -15,15 +18,16 @@ const HomePage: React.FC = () => {
         { name: "Wine Quality", description: "Wine Quality dataset for regression tasks." },
     ];
 
+    // State to track selected dataset
     const [selectedDataset, setSelectedDataset] = useState<string>("");
 
-    // Handle dataset selection
+    // Handle dataset selection and navigation
     const handleDatasetSelect = () => {
         if (selectedDataset) {
-            setDataset(selectedDataset); // Set the dataset in the context
+            setDataset(selectedDataset); // Set the selected dataset globally
             navigate("/build"); // Navigate to the Build Page
         } else {
-            alert("Please select a dataset to proceed!");
+            alert("Please select a dataset to proceed!"); // Show alert if no dataset is selected
         }
     };
 
@@ -32,14 +36,15 @@ const HomePage: React.FC = () => {
             <div className="text-center">
                 <h1 className="home-title">Build.Train.Share</h1>
                 <p className="home-subtitle">
-                    An Interactive DND Neural Network Builder
+                    An Interactive Drag-and-Drop Neural Network Builder
                 </p>
-                {/* Dropdown Menu */}
+                {/* Dropdown for dataset selection */}
                 <div className="dropdown-wrapper">
                     <select
                         className="form-select"
                         value={selectedDataset}
                         onChange={(e) => setSelectedDataset(e.target.value)}
+                        
                     >
                         <option value="">Select Dataset</option>
                         {datasets.map((dataset) => (
@@ -49,7 +54,7 @@ const HomePage: React.FC = () => {
                         ))}
                     </select>
                 </div>
-                {/* Submit Button */}
+                {/* Proceed button */}
                 <button
                     className="btn btn-secondary btn-lg proceed-button"
                     onClick={handleDatasetSelect}

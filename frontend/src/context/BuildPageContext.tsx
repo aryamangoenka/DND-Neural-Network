@@ -22,6 +22,7 @@ export const BuildPageProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     // Initialize layers with x and y properties
     const [layers, setLayers] = useState<Layer[]>([
         { id: "Input-1", type: "Input", color: "#cccccc", x: 100, y: 100 },
+        { id: "Output-1", type: "Output", color: "#cccccc", x: 700, y: 300 }
     ]);
 
     return (
