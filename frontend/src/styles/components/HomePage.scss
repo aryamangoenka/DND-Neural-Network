@@ -1,24 +1,23 @@
-@use "../base/variables" as vars; /* Use namespace for variables */
-@use "../base/mixins" as mixins;  /* Use namespace for mixins */
+@use "../base/variables" as vars;
+@use "../base/mixins" as mixins;
 
 /* Main Container */
 .container-fluid {
-    @include mixins.flex-center; /* Use mixin from the mixins namespace */
+    @include mixins.flex-center;
     flex-direction: column;
     min-height: 100vh;
-    background-color: vars.$primary-color; /* Use variable from the variables namespace */
+    background-color: vars.$primary-color;
     color: vars.$link-color;
     padding: vars.$space-lg;
 }
 
 /* Title Styles */
 .home-title {
-    font-size: 3rem;
+    font-size: vars.$font-large;
     font-weight: vars.$font-weight-bold;
     margin-bottom: vars.$space-md;
 
-    /* Responsive Font Sizes */
-    @include mixins.responsive-font(3rem);
+    @include mixins.responsive-font(vars.$font-large);
 }
 
 /* Subtitle Styles */
@@ -33,8 +32,8 @@
     margin-bottom: vars.$space-md;
 
     .form-select {
-        background-color: vars.$primary-color;
-        color: vars.$link-color;
+        background-color: vars.$card-bg-color;
+        color: black;
         border: 1px solid vars.$link-hover-color;
         max-width: 400px;
         padding: vars.$space-sm;
@@ -42,7 +41,7 @@
 
         &:focus {
             box-shadow: none;
-            border-color: vars.$active-link-color; /* Highlight on focus */
+            border-color: vars.$active-link-color;
         }
     }
 }
@@ -50,11 +49,34 @@
 /* Button Styles */
 .proceed-button {
     background-color: vars.$active-link-color;
-    border-color: vars.$active-link-color;
-    color: black;
+    color: vars.$text-black;
+    font-size: vars.$font-base;
+    font-weight: vars.$font-weight-bold;
+    padding: vars.$space-sm vars.$space-md;
+    border-radius: vars.$space-sm;
+    transition: background-color vars.$transition-duration vars.$transition-ease;
 
     &:hover {
         background-color: light-dark(vars.$active-link-color, 10%);
-        border-color: light-dark(vars.$active-link-color, 10%);
+    }
+}
+
+/* Cards or Panels */
+.card {
+    background-color: vars.$card-bg-color;
+    padding: vars.$space-md;
+    border-radius: vars.$space-sm;
+    box-shadow: vars.$shadow-sm;
+    margin-bottom: vars.$space-lg;
+
+    &:hover {
+        @include mixins.shadow(vars.$shadow-hover);
+    }
+}
+
+/* Responsive Breakpoints */
+@media (max-width: vars.$breakpoint-md) {
+    .container-fluid {
+        padding: vars.$space-md;
     }
 }
