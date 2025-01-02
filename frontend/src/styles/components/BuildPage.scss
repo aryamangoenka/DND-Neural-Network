@@ -58,7 +58,7 @@
 
     .canvas {
         background-color: #f3f3f3;
-        border: 2px dashed vars.$link-hover-color;
+        border: 2px vars.$link-hover-color;
         border-radius: vars.$space-sm;
         padding: vars.$space-md;
         position: relative;
@@ -83,7 +83,7 @@
             cursor: grab;
             box-shadow: vars.$shadow-sm;
             color: black !important;
-            background-color: inherit;
+            background-color: white !important;
         }
     }
 
