@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState, useEffect } from "react";
 import { Node, Edge } from "reactflow";
 
 interface BuildPageContextType {
@@ -10,13 +10,22 @@ interface BuildPageContextType {
 
 const BuildPageContext = createContext<BuildPageContextType | undefined>(undefined);
 
-export const BuildPageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [nodes, setNodes] = useState<Node[]>([
-    { id: "Input-1", data: { label: "Input Layer" }, position: { x: 100, y: 100 }, type: "input" },
-    { id: "Output-1", data: { label: "Output Layer" }, position: { x: 700, y: 300 }, type: "output" },
-  ]);
+const defaultNodes: Node[] = [
+  { id: "Input-1", data: { label: "Input Layer" }, position: { x: 100, y: 100 }, type: "input" },
+  { id: "Output-1", data: { label: "Output Layer" }, position: { x: 700, y: 300 }, type: "output" },
+];
 
-  const [edges, setEdges] = useState<Edge[]>([]);
+const defaultEdges: Edge[] = [];
+
+export const BuildPageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [nodes, setNodes] = useState<Node[]>(defaultNodes);
+  const [edges, setEdges] = useState<Edge[]>(defaultEdges);
+
+  useEffect(() => {
+    // Clear localStorage on refresh
+    localStorage.removeItem("nodes");
+    localStorage.removeItem("edges");
+  }, []);
 
   return (
     <BuildPageContext.Provider value={{ nodes, setNodes, edges, setEdges }}>
