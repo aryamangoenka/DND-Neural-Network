@@ -32,8 +32,32 @@ def configure_model():
 #Training Endpoint
 @app.route("/train", methods=["POST"])
 def train_model():
-    # Placeholder for training logic
-    return {"message": "Training started"}, 200
+    try:
+        # Debugging: Log the raw request
+        print("Raw Request Data:", request.data)
+        print("Headers:", request.headers)
+
+        # Parse the received JSON data
+        data = request.get_json()
+        print("Parsed JSON Data:", data)
+
+        nodes = data.get('nodes')
+        edges = data.get('edges')
+
+        # Validate the input structure
+        if not nodes or not edges:
+            return jsonify({'error': 'Invalid configuration. Nodes and edges are required.'}), 400
+
+        # Simulate training logic
+        print("Received Nodes:", nodes)
+        print("Received Edges:", edges)
+
+        # Send a success response
+        return jsonify({'message': 'Training started successfully!', 'status': 'success'}), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 
 #Model Export Endpoint
 @app.route("/export", methods=["GET"])
