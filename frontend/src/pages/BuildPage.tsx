@@ -17,13 +17,13 @@ import "../styles/components/BuildPage.scss";
 import { useBuildPageContext } from "../context/BuildPageContext";
 
 const BuildPage = (): JSX.Element => {
-  const { nodes, setNodes, edges, setEdges } = useBuildPageContext();
+  const { nodes, setNodes, edges, setEdges, validationErrors, setValidationErrors } = useBuildPageContext();
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
 
   const addLayer = (type: string): void => {
     const defaultParams: Record<string, any> = {
       dense: { neurons: 64, activation: "None" },
-      convolution: { filters: 32, kernelSize: "3x3", stride: 1 },
+      convolution: { filters: 32, kernelSize: [3, 3], stride: [1, 1] },
       dropout: { rate: 0.2 },
       activation: { activation: "ReLU" },
       batchnormalization: { momentum: 0.99, epsilon: 0.001 },
@@ -164,10 +164,60 @@ const BuildPage = (): JSX.Element => {
     );
   };
 
-  const onNodeClick = (_: any, node: Node): void => {
-    setSelectedNode(node);
+  const validateLayerParameters = (): Record<string, Record<string, string>> => {
+    const errors: Record<string, Record<string, string>> = {};
+
+    nodes.forEach((node) => {
+      const { type, data } = node;
+      const nodeErrors: Record<string, string> = {};
+
+      if (type === "dense") {
+        if (!Number.isInteger(data.neurons) || data.neurons <= 0) {
+          nodeErrors.neurons = "Number of neurons must be a positive integer.";
+        }
+      }
+
+      if (type === "convolution") {
+        if (!Number.isInteger(data.filters) || data.filters <= 0) {
+          nodeErrors.filters = "Filters must be a positive integer.";
+        }
+        if (!Array.isArray(data.kernelSize) || data.kernelSize.some((v: number) => v <= 0)) {
+          nodeErrors.kernelSize = "Kernel size must be positive integers.";
+        }
+        if (!Array.isArray(data.stride) || data.stride.some((v: number) => v <= 0)) {
+          nodeErrors.stride = "Stride must be positive integers.";
+        }
+      }
+
+      if (type === "maxpooling") {
+        if (!Array.isArray(data.poolSize) || data.poolSize.some((v: number) => v <= 0)) {
+          nodeErrors.poolSize = "Pool size must be positive integers.";
+        }
+        if (!Array.isArray(data.stride) || data.stride.some((v: number) => v <= 0)) {
+          nodeErrors.stride = "Stride must be positive integers.";
+        }
+      }
+
+      if (Object.keys(nodeErrors).length > 0) {
+        errors[node.id] = nodeErrors;
+      }
+    });
+
+    return errors;
   };
 
+  const handleTrain = (): void => {
+    const errors = validateLayerParameters();
+
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      alert("Validation failed! Please fix the errors.");
+      return;
+    }
+
+    alert("Training started!");
+    setValidationErrors({});
+  };
   return (
     <div className="build-page">
       <div className="left-sidebar">
@@ -186,7 +236,7 @@ const BuildPage = (): JSX.Element => {
           </div>
         ))}
       </div>
-
+  
       <div className="canvas">
         <ReactFlow
           nodes={nodes}
@@ -194,14 +244,14 @@ const BuildPage = (): JSX.Element => {
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
-          onNodeClick={onNodeClick}
+          onNodeClick={(_, node) => setSelectedNode(node)}
           fitView
         >
           <Background />
           <Controls />
         </ReactFlow>
       </div>
-
+  
       <div className="right-sidebar">
         <h2>Templates</h2>
         <button onClick={() => loadTemplate("SimpleFeedforward")}>
@@ -212,15 +262,29 @@ const BuildPage = (): JSX.Element => {
           Fully Connected Regression
         </button>
         <button onClick={() => loadTemplate("Blank")}>Blank Template</button>
+  
         <div className="parameters-section">
           <h2>Parameters</h2>
-
+  
           {!selectedNode ? (
             <p>Select a layer to see parameters</p>
           ) : (
             <>
               <p>Layer Type: {selectedNode.type}</p>
-
+  
+              {/* Validation Errors */}
+              {validationErrors[selectedNode.id] && (
+                <div className="validation-errors">
+                  {(Object.values(validationErrors[selectedNode.id] || {}) as string[]).map(
+                    (error, index) => (
+                      <p key={index} style={{ color: "red" }}>
+                        {error}
+                      </p>
+                    )
+                  )}
+                </div>
+              )}
+  
               {/* Dense Layer */}
               {selectedNode.type === "dense" && (
                 <>
@@ -246,47 +310,179 @@ const BuildPage = (): JSX.Element => {
                   </select>
                 </>
               )}
-
+  
               {/* Convolutional Layer */}
               {selectedNode.type === "convolution" && (
                 <>
+                  {/* Filters */}
                   <label>Filters:</label>
                   <input
                     type="number"
+                    min="1"
                     value={selectedNode.data.filters || ""}
-                    onChange={(e) => updateParameter("filters", +e.target.value)}
-                  />
-                  <label>Kernel Size:</label>
-                  <input
-                    type="text"
-                    value={selectedNode.data.kernelSize || ""}
                     onChange={(e) =>
-                      updateParameter("kernelSize", e.target.value)
+                      updateParameter("filters", +e.target.value)
                     }
                   />
+  
+                  {/* Kernel Size */}
+                  <label>Kernel Size:</label>
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: "10px",
+                      alignItems: "center",
+                    }}
+                  >
+                    <input
+                      type="number"
+                      min="1"
+                      value={selectedNode.data.kernelSize?.[0] || ""}
+                      onChange={(e) =>
+                        updateParameter("kernelSize", [
+                          parseInt(e.target.value) || 1, // Height
+                          selectedNode.data.kernelSize?.[1] || 1, // Current Width
+                        ])
+                      }
+                      placeholder=""
+                      style={{ width: "60px" }}
+                    />
+                    <span>x</span>
+                    <input
+                      type="number"
+                      min="1"
+                      value={selectedNode.data.kernelSize?.[1] || ""}
+                      onChange={(e) =>
+                        updateParameter("kernelSize", [
+                          selectedNode.data.kernelSize?.[0] || 1, // Current Height
+                          parseInt(e.target.value) || 1, // Width
+                        ])
+                      }
+                      placeholder=""
+                      style={{ width: "60px" }}
+                    />
+                  </div>
+  
+                  {/* Stride */}
                   <label>Stride:</label>
-                  <input
-                    type="number"
-                    value={selectedNode.data.stride || ""}
-                    onChange={(e) => updateParameter("stride", +e.target.value)}
-                  />
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: "10px",
+                      alignItems: "center",
+                    }}
+                  >
+                    <input
+                      type="number"
+                      min="1"
+                      value={selectedNode.data.stride?.[0] || ""}
+                      onChange={(e) =>
+                        updateParameter("stride", [
+                          parseInt(e.target.value) || 1, // Height
+                          selectedNode.data.stride?.[1] || 1, // Current Width
+                        ])
+                      }
+                      placeholder=""
+                      style={{ width: "60px" }}
+                    />
+                    <span>x</span>
+                    <input
+                      type="number"
+                      min="1"
+                      value={selectedNode.data.stride?.[1] || ""}
+                      onChange={(e) =>
+                        updateParameter("stride", [
+                          selectedNode.data.stride?.[0] || 1, // Current Height
+                          parseInt(e.target.value) || 1, // Width
+                        ])
+                      }
+                      placeholder=""
+                      style={{ width: "60px" }}
+                    />
+                  </div>
                 </>
               )}
+  
               {/* MaxPooling Layer */}
               {selectedNode.type === "maxpooling" && (
                 <>
+                  {/* Pool Size */}
                   <label>Pool Size:</label>
-                  <input
-                    type="text"
-                    value={selectedNode.data.poolSize || ""}
-                    onChange={(e) => updateParameter("poolSize", e.target.value)}
-                  />
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: "10px",
+                      alignItems: "center",
+                    }}
+                  >
+                    <input
+                      type="number"
+                      min="1"
+                      value={selectedNode.data.poolSize?.[0] || ""}
+                      onChange={(e) =>
+                        updateParameter("poolSize", [
+                          parseInt(e.target.value) || 1, // Height
+                          selectedNode.data.poolSize?.[1] || 1, // Current Width
+                        ])
+                      }
+                      placeholder=""
+                      style={{ width: "60px" }}
+                    />
+                    <span>x</span>
+                    <input
+                      type="number"
+                      min="1"
+                      value={selectedNode.data.poolSize?.[1] || ""}
+                      onChange={(e) =>
+                        updateParameter("poolSize", [
+                          selectedNode.data.poolSize?.[0] || 1, // Current Height
+                          parseInt(e.target.value) || 1, // Width
+                        ])
+                      }
+                      placeholder=""
+                      style={{ width: "60px" }}
+                    />
+                  </div>
+  
+                  {/* Stride */}
                   <label>Stride:</label>
-                  <input
-                    type="number"
-                    value={selectedNode.data.stride || ""}
-                    onChange={(e) => updateParameter("stride", +e.target.value)}
-                  />
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: "10px",
+                      alignItems: "center",
+                    }}
+                  >
+                    <input
+                      type="number"
+                      min="1"
+                      value={selectedNode.data.stride?.[0] || ""}
+                      onChange={(e) =>
+                        updateParameter("stride", [
+                          parseInt(e.target.value) || 1, // Height
+                          selectedNode.data.stride?.[1] || 1, // Current Width
+                        ])
+                      }
+                      placeholder=""
+                      style={{ width: "60px" }}
+                    />
+                    <span>x</span>
+                    <input
+                      type="number"
+                      min="1"
+                      value={selectedNode.data.stride?.[1] || ""}
+                      onChange={(e) =>
+                        updateParameter("stride", [
+                          selectedNode.data.stride?.[0] || 1, // Current Height
+                          parseInt(e.target.value) || 1, // Width
+                        ])
+                      }
+                      placeholder=""
+                      style={{ width: "60px" }}
+                    />
+                  </div>
+  
+                  {/* Padding */}
                   <label>Padding:</label>
                   <select
                     value={selectedNode.data.padding || "valid"}
@@ -297,87 +493,18 @@ const BuildPage = (): JSX.Element => {
                   </select>
                 </>
               )}
-
-              {/* Dropout Layer */}
-              {selectedNode.type === "dropout" && (
-                <>
-                  <label>Dropout Rate:</label>
-                  <input
-                    type="number"
-                    value={selectedNode.data.rate || ""}
-                    step="0.1"
-                    min="0"
-                    max="1"
-                    onChange={(e) => updateParameter("rate", +e.target.value)}
-                  />
-                </>
-              )}
-
-              {/* BatchNormalization Layer */}
-              {selectedNode.type === "batch\nnormalization" && (
-                <>
-                  <label>Momentum:</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={selectedNode.data.momentum || 0.99}
-                    onChange={(e) => updateParameter("momentum", +e.target.value)}
-                  />
-
-                  <label>Epsilon:</label>
-                  <input
-                    type="number"
-                    step="0.0001"
-                    value={selectedNode.data.epsilon || 0.001}
-                    onChange={(e) => updateParameter("epsilon", +e.target.value)}
-                  />
-                </>
-              )}
-
-              {/* Activation Layer */}
-              {selectedNode.type === "activation" && (
-                <>
-                  <label>Activation Function:</label>
-                  <select
-                    value={selectedNode.data.activation || "None"}
-                    onChange={(e) =>
-                      updateParameter("activation", e.target.value)
-                    }
-                  >
-                    <option value="None">None</option>
-                    <option value="ReLU">ReLU</option>
-                    <option value="Sigmoid">Sigmoid</option>
-                    <option value="Softmax">Softmax</option>
-                    <option value="Tanh">Tanh</option>
-                    <option value="Leaky ReLU">Leaky ReLU</option>
-                  </select>
-                </>
-              )}
-
-              {/* Output Layer */}
-              {selectedNode.type === "output" && (
-                <>
-                  <label>Activation Function:</label>
-                  <select
-                    value={selectedNode.data.activation || "None"}
-                    onChange={(e) =>
-                      updateParameter("activation", e.target.value)
-                    }
-                  >
-                    <option value="None">None</option>
-                    <option value="Softmax">Softmax</option>
-                    <option value="Sigmoid">Sigmoid</option>
-                  </select>
-                </>
-              )}
             </>
           )}
         </div>
-
-        
+  
+        {/* Train Button */}
+        <button className="train-button" onClick={handleTrain}>
+          Train
+        </button>
       </div>
     </div>
   );
+  
 };
 
 export default BuildPage;
