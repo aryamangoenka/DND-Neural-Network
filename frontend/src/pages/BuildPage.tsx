@@ -206,18 +206,45 @@ const BuildPage = (): JSX.Element => {
     return errors;
   };
 
-  const handleTrain = (): void => {
+  const handleTrain = async (): Promise<void> => {
     const errors = validateLayerParameters();
-
+  
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
       alert("Validation failed! Please fix the errors.");
       return;
     }
-
-    alert("Training started!");
-    setValidationErrors({});
+  
+    try {
+      // Serialize the nodes and edges
+      const payload = {
+        nodes,
+        edges,
+      };
+  
+      // Make a POST request to the backend
+      const response = await fetch("http://127.0.0.1:5000/train", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+  
+      if (!response.ok) {
+        const errorData = await response.json();
+        alert(`Training failed: ${errorData.error || "Unknown error"}`);
+        return;
+      }
+  
+      const data = await response.json();
+      alert(data.message || "Training started successfully!");
+      setValidationErrors({});
+    } catch (error) {
+      alert(`An error occurred: ${error}`);
+    }
   };
+  
   return (
     <div className="build-page">
       <div className="left-sidebar">
