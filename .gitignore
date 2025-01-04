@@ -25,3 +25,9 @@ dist-ssr
 venv/
 * text=auto
 venv/**/.DS_Store
+
+# Python cache files
+__pycache__/
+*.pyc
+venv/**/__pycache__/
+venv/**/*.pyc
