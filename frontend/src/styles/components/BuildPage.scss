@@ -92,7 +92,10 @@
   // Right sidebar-specific styles
   .right-sidebar {
     border-radius: 0 10px 10px 0;
+<<<<<<< HEAD
 
+=======
+>>>>>>> 68e4c30d619c0bf796ec773f5a0a10b50fa30d92
     .parameters-section {
       margin-top: 1rem;
       padding: 1rem;
@@ -107,6 +110,11 @@
         margin-bottom: 1rem;
       }
 
+<<<<<<< HEAD
+=======
+      
+
+>>>>>>> 68e4c30d619c0bf796ec773f5a0a10b50fa30d92
       label {
         display: block;
         margin-bottom: 0.5rem;
@@ -130,6 +138,7 @@
         }
       }
     }
+<<<<<<< HEAD
 
     .train-section {
       margin-top: 1rem;
@@ -177,6 +186,8 @@
         font-style: italic;
       }
     }
+=======
+>>>>>>> 68e4c30d619c0bf796ec773f5a0a10b50fa30d92
   }
 
   // Canvas styles
@@ -190,6 +201,7 @@
     }
   }
 }
+<<<<<<< HEAD
 
 // Spinner Animation
 @keyframes spin {
@@ -197,3 +209,5 @@
     transform: rotate(360deg);
   }
 }
+=======
+>>>>>>> 68e4c30d619c0bf796ec773f5a0a10b50fa30d92

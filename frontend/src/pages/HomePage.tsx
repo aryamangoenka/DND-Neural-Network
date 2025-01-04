@@ -14,8 +14,13 @@ const HomePage = ({}: HomePageProps) => {
     const datasets = [
         { name: "Iris", description: "Iris dataset for classification tasks." },
         { name: "MNIST", description: "MNIST dataset for image classification." },
+<<<<<<< HEAD
         { name: "California housing", description: "Titanic dataset for binary classification." },
         { name: "CIFAR-10", description: "Wine Quality dataset for regression tasks." },
+=======
+        { name: "Titanic", description: "Titanic dataset for binary classification." },
+        { name: "Wine Quality", description: "Wine Quality dataset for regression tasks." },
+>>>>>>> 68e4c30d619c0bf796ec773f5a0a10b50fa30d92
     ];
 
     // State to track selected dataset
