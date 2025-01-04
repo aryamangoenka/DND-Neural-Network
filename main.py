@@ -33,30 +33,42 @@ def configure_model():
 @app.route("/train", methods=["POST"])
 def train_model():
     try:
-        # Debugging: Log the raw request
+        # Debugging: Log the incoming request
         print("Raw Request Data:", request.data)
         print("Headers:", request.headers)
 
-        # Parse the received JSON data
+        # Ensure the Content-Type is application/json
+        if not request.is_json:
+            return jsonify({"error": "Invalid Content-Type. Expected application/json"}), 415
+
+        # Parse JSON payload
         data = request.get_json()
-        print("Parsed JSON Data:", data)
+        if not data:
+            return jsonify({"error": "No JSON payload received"}), 400
 
-        nodes = data.get('nodes')
-        edges = data.get('edges')
+        # Extract nodes and edges
+        nodes = data.get("nodes")
+        edges = data.get("edges")
 
-        # Validate the input structure
+        # Validate input structure
         if not nodes or not edges:
-            return jsonify({'error': 'Invalid configuration. Nodes and edges are required.'}), 400
+            return jsonify({"error": "Nodes and edges are required"}), 400
 
         # Simulate training logic
         print("Received Nodes:", nodes)
         print("Received Edges:", edges)
 
-        # Send a success response
-        return jsonify({'message': 'Training started successfully!', 'status': 'success'}), 200
+        # Respond with success
+        return jsonify({
+            "message": "Training started successfully!",
+            "status": "success",
+            "nodes_count": len(nodes),
+            "edges_count": len(edges)
+        }), 200
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        # Handle unexpected errors
+        return jsonify({"error": str(e)}), 500
 
 
 #Model Export Endpoint
