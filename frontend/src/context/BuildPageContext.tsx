@@ -22,29 +22,24 @@ interface BuildPageContextType {
 
 const BuildPageContext = createContext<BuildPageContextType | undefined>(undefined);
 
-// Default Nodes and Edges
-const defaultNodes: Node<NodeData>[] = [
+// **Blank Template Nodes and Edges**: Default layout
+const blankTemplateNodes: Node<NodeData>[] = [
   { id: "Input-1", data: { label: "Input Layer" }, position: { x: 100, y: 100 }, type: "input" },
   { id: "Output-1", data: { label: "Output Layer" }, position: { x: 700, y: 300 }, type: "output" },
 ];
-
-const defaultEdges: Edge[] = [];
+const blankTemplateEdges: Edge[] = [];
 
 // BuildPageProvider Component
 export const BuildPageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [nodes, setNodes] = useState<Node<NodeData>[]>(
-    () => JSON.parse(localStorage.getItem("nodes") || "[]") || defaultNodes
-  );
-  const [edges, setEdges] = useState<Edge[]>(
-    () => JSON.parse(localStorage.getItem("edges") || "[]") || defaultEdges
-  );
+  const [nodes, setNodes] = useState<Node<NodeData>[]>(blankTemplateNodes);
+  const [edges, setEdges] = useState<Edge[]>(blankTemplateEdges);
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
 
-  // Save Nodes and Edges to localStorage on change
+  // Reset to Blank Template on Mount (ignores localStorage)
   useEffect(() => {
-    localStorage.setItem("nodes", JSON.stringify(nodes));
-    localStorage.setItem("edges", JSON.stringify(edges));
-  }, [nodes, edges]);
+    setNodes(blankTemplateNodes);
+    setEdges(blankTemplateEdges);
+  }, []); // Runs once on mount
 
   return (
     <BuildPageContext.Provider

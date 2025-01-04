@@ -17,7 +17,14 @@ import "../styles/components/BuildPage.scss";
 import { useBuildPageContext } from "../context/BuildPageContext";
 
 const BuildPage = (): JSX.Element => {
-  const { nodes, setNodes, edges, setEdges, validationErrors, setValidationErrors } = useBuildPageContext();
+  const {
+    nodes,
+    setNodes,
+    edges,
+    setEdges,
+    validationErrors,
+    setValidationErrors,
+  } = useBuildPageContext();
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
 
   const addLayer = (type: string): void => {
@@ -164,7 +171,10 @@ const BuildPage = (): JSX.Element => {
     );
   };
 
-  const validateLayerParameters = (): Record<string, Record<string, string>> => {
+  const validateLayerParameters = (): Record<
+    string,
+    Record<string, string>
+  > => {
     const errors: Record<string, Record<string, string>> = {};
 
     nodes.forEach((node) => {
@@ -181,19 +191,31 @@ const BuildPage = (): JSX.Element => {
         if (!Number.isInteger(data.filters) || data.filters <= 0) {
           nodeErrors.filters = "Filters must be a positive integer.";
         }
-        if (!Array.isArray(data.kernelSize) || data.kernelSize.some((v: number) => v <= 0)) {
+        if (
+          !Array.isArray(data.kernelSize) ||
+          data.kernelSize.some((v: number) => v <= 0)
+        ) {
           nodeErrors.kernelSize = "Kernel size must be positive integers.";
         }
-        if (!Array.isArray(data.stride) || data.stride.some((v: number) => v <= 0)) {
+        if (
+          !Array.isArray(data.stride) ||
+          data.stride.some((v: number) => v <= 0)
+        ) {
           nodeErrors.stride = "Stride must be positive integers.";
         }
       }
 
       if (type === "maxpooling") {
-        if (!Array.isArray(data.poolSize) || data.poolSize.some((v: number) => v <= 0)) {
+        if (
+          !Array.isArray(data.poolSize) ||
+          data.poolSize.some((v: number) => v <= 0)
+        ) {
           nodeErrors.poolSize = "Pool size must be positive integers.";
         }
-        if (!Array.isArray(data.stride) || data.stride.some((v: number) => v <= 0)) {
+        if (
+          !Array.isArray(data.stride) ||
+          data.stride.some((v: number) => v <= 0)
+        ) {
           nodeErrors.stride = "Stride must be positive integers.";
         }
       }
@@ -205,23 +227,37 @@ const BuildPage = (): JSX.Element => {
 
     return errors;
   };
+  const serializePayload = (): { nodes: any[]; edges: any[] } => {
+    // Extract relevant fields for nodes
+    const serializedNodes = nodes.map(({ id, type, data }) => ({
+      id,
+      type,
+      data,
+    }));
+
+    // Extract relevant fields for edges
+    const serializedEdges = edges.map(({ source, target }) => ({
+      source,
+      target,
+    }));
+
+    return { nodes: serializedNodes, edges: serializedEdges };
+  };
 
   const handleTrain = async (): Promise<void> => {
     const errors = validateLayerParameters();
-  
+
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
       alert("Validation failed! Please fix the errors.");
       return;
     }
-  
+
     try {
-      // Serialize the nodes and edges
-      const payload = {
-        nodes,
-        edges,
-      };
-  
+      // Serialize the payload
+      const payload = serializePayload();
+      console.log("Serialized Payload:", payload);
+
       // Make a POST request to the backend
       const response = await fetch("http://127.0.0.1:5000/train", {
         method: "POST",
@@ -230,21 +266,23 @@ const BuildPage = (): JSX.Element => {
         },
         body: JSON.stringify(payload),
       });
-  
+
       if (!response.ok) {
         const errorData = await response.json();
+        console.error("Backend Error:", errorData);
         alert(`Training failed: ${errorData.error || "Unknown error"}`);
         return;
       }
-  
+
       const data = await response.json();
+      console.log("Response from Backend:", data);
       alert(data.message || "Training started successfully!");
       setValidationErrors({});
     } catch (error) {
       alert(`An error occurred: ${error}`);
     }
   };
-  
+
   return (
     <div className="build-page">
       <div className="left-sidebar">
@@ -263,7 +301,7 @@ const BuildPage = (): JSX.Element => {
           </div>
         ))}
       </div>
-  
+
       <div className="canvas">
         <ReactFlow
           nodes={nodes}
@@ -278,7 +316,7 @@ const BuildPage = (): JSX.Element => {
           <Controls />
         </ReactFlow>
       </div>
-  
+
       <div className="right-sidebar">
         <h2>Templates</h2>
         <button onClick={() => loadTemplate("SimpleFeedforward")}>
@@ -289,29 +327,49 @@ const BuildPage = (): JSX.Element => {
           Fully Connected Regression
         </button>
         <button onClick={() => loadTemplate("Blank")}>Blank Template</button>
-  
+
         <div className="parameters-section">
           <h2>Parameters</h2>
-  
+
           {!selectedNode ? (
             <p>Select a layer to see parameters</p>
           ) : (
             <>
               <p>Layer Type: {selectedNode.type}</p>
-  
+
               {/* Validation Errors */}
               {validationErrors[selectedNode.id] && (
                 <div className="validation-errors">
-                  {(Object.values(validationErrors[selectedNode.id] || {}) as string[]).map(
-                    (error, index) => (
-                      <p key={index} style={{ color: "red" }}>
-                        {error}
-                      </p>
-                    )
-                  )}
+                  {(
+                    Object.values(
+                      validationErrors[selectedNode.id] || {}
+                    ) as string[]
+                  ).map((error, index) => (
+                    <p key={index} style={{ color: "red" }}>
+                      {error}
+                    </p>
+                  ))}
                 </div>
               )}
-  
+              {/* Output Layer */}
+              {selectedNode.type=== "output" && (
+                <>
+                  <label>Activation Function:</label>
+                  <select
+                    value={selectedNode.data.activation || "None"}
+                    onChange={(e) =>
+                      updateParameter("activation", e.target.value)
+                    }
+                    >
+                    <option value="None">None</option>
+                    <option value="Sigmoid">Sigmoid</option>
+                    <option value="Softmax">Softmax</option>
+                  </select>
+
+                </>
+
+              )}
+
               {/* Dense Layer */}
               {selectedNode.type === "dense" && (
                 <>
@@ -319,7 +377,9 @@ const BuildPage = (): JSX.Element => {
                   <input
                     type="number"
                     value={selectedNode.data.neurons || ""}
-                    onChange={(e) => updateParameter("neurons", +e.target.value)}
+                    onChange={(e) =>
+                      updateParameter("neurons", +e.target.value)
+                    }
                   />
                   <label>Activation Function:</label>
                   <select
@@ -337,7 +397,7 @@ const BuildPage = (): JSX.Element => {
                   </select>
                 </>
               )}
-  
+
               {/* Convolutional Layer */}
               {selectedNode.type === "convolution" && (
                 <>
@@ -351,7 +411,7 @@ const BuildPage = (): JSX.Element => {
                       updateParameter("filters", +e.target.value)
                     }
                   />
-  
+
                   {/* Kernel Size */}
                   <label>Kernel Size:</label>
                   <div
@@ -389,7 +449,7 @@ const BuildPage = (): JSX.Element => {
                       style={{ width: "60px" }}
                     />
                   </div>
-  
+
                   {/* Stride */}
                   <label>Stride:</label>
                   <div
@@ -427,9 +487,23 @@ const BuildPage = (): JSX.Element => {
                       style={{ width: "60px" }}
                     />
                   </div>
+                  <label>Activation Function:</label>
+                  <select
+                    value={selectedNode.data.activation || "None"}
+                    onChange={(e) =>
+                      updateParameter("activation", e.target.value)
+                    }
+                  >
+                    <option value="None">None</option>
+                    <option value="ReLU">ReLU</option>
+                    <option value="Sigmoid">Sigmoid</option>
+                    <option value="Softmax">Softmax</option>
+                    <option value="Tanh">Tanh</option>
+                    <option value="Leaky ReLU">Leaky ReLU</option>
+                  </select>
                 </>
               )}
-  
+
               {/* MaxPooling Layer */}
               {selectedNode.type === "maxpooling" && (
                 <>
@@ -470,7 +544,7 @@ const BuildPage = (): JSX.Element => {
                       style={{ width: "60px" }}
                     />
                   </div>
-  
+
                   {/* Stride */}
                   <label>Stride:</label>
                   <div
@@ -508,7 +582,7 @@ const BuildPage = (): JSX.Element => {
                       style={{ width: "60px" }}
                     />
                   </div>
-  
+
                   {/* Padding */}
                   <label>Padding:</label>
                   <select
@@ -523,7 +597,7 @@ const BuildPage = (): JSX.Element => {
             </>
           )}
         </div>
-  
+
         {/* Train Button */}
         <button className="train-button" onClick={handleTrain}>
           Train
@@ -531,7 +605,6 @@ const BuildPage = (): JSX.Element => {
       </div>
     </div>
   );
-  
 };
 
 export default BuildPage;
