@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 import numpy as np
@@ -15,31 +14,16 @@ CORS(app)
 # Set global SSL context using certifi's CA certificates
 ssl._create_default_https_context = ssl.create_default_context
 
-=======
-from flask import Flask,jsonify,request
-from flask_cors import CORS
-
-app = Flask(__name__)
-CORS(app)  
->>>>>>> 68e4c30d619c0bf796ec773f5a0a10b50fa30d92
 
 @app.route("/")
 def home():
     return jsonify({"message": "Hello, Flask!"})
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 68e4c30d619c0bf796ec773f5a0a10b50fa30d92
 @app.route('/api/health', methods=['GET'])
 def health_check():
     return jsonify({"status": "running", "message": "Flask backend is operational!"})
 
 
-<<<<<<< HEAD
-=======
-#Dataset Upload Endpoint
->>>>>>> 68e4c30d619c0bf796ec773f5a0a10b50fa30d92
 @app.route("/upload", methods=["POST"])
 def upload_dataset():
     if "file" not in request.files:
@@ -49,21 +33,11 @@ def upload_dataset():
     file.save(f"./uploads/{file.filename}")
     return {"message": f"{file.filename} uploaded successfully!"}, 200
 
-<<<<<<< HEAD
-
-=======
-#Model Configuration Endpoint
->>>>>>> 68e4c30d619c0bf796ec773f5a0a10b50fa30d92
 @app.route("/configure", methods=["POST"])
 def configure_model():
     config = request.json  # JSON payload from frontend
     return {"message": "Model configured", "config": config}, 200
 
-<<<<<<< HEAD
-
-=======
-#Training Endpoint
->>>>>>> 68e4c30d619c0bf796ec773f5a0a10b50fa30d92
 @app.route("/train", methods=["POST"])
 def train_model():
     try:
@@ -80,22 +54,15 @@ def train_model():
         if not data:
             return jsonify({"error": "No JSON payload received"}), 400
 
-<<<<<<< HEAD
         # Extract nodes, edges, and dataset
         nodes = data.get("nodes")
         edges = data.get("edges")
         dataset = data.get("dataset")
-=======
-        # Extract nodes and edges
-        nodes = data.get("nodes")
-        edges = data.get("edges")
->>>>>>> 68e4c30d619c0bf796ec773f5a0a10b50fa30d92
 
         # Validate input structure
         if not nodes or not edges:
             return jsonify({"error": "Nodes and edges are required"}), 400
 
-<<<<<<< HEAD
         # Validate dataset
         if not dataset:
             return jsonify({"error": "Dataset is required"}), 400
@@ -123,18 +90,6 @@ def train_model():
             "dataset": dataset,
             "train_data_shape": x_train.shape,
             "test_data_shape": x_test.shape
-=======
-        # Simulate training logic
-        print("Received Nodes:", nodes)
-        print("Received Edges:", edges)
-
-        # Respond with success
-        return jsonify({
-            "message": "Training started successfully!",
-            "status": "success",
-            "nodes_count": len(nodes),
-            "edges_count": len(edges)
->>>>>>> 68e4c30d619c0bf796ec773f5a0a10b50fa30d92
         }), 200
 
     except Exception as e:
@@ -142,7 +97,6 @@ def train_model():
         return jsonify({"error": str(e)}), 500
 
 
-<<<<<<< HEAD
 def load_dataset(dataset_name):
     """
     Loads and preprocesses the dataset based on the name.
@@ -195,19 +149,10 @@ def load_dataset(dataset_name):
     return (x_train, y_train), (x_test, y_test)
 
 
-=======
-#Model Export Endpoint
->>>>>>> 68e4c30d619c0bf796ec773f5a0a10b50fa30d92
 @app.route("/export", methods=["GET"])
 def export_model():
     return {"message": "Model exported successfully!"}
 
-<<<<<<< HEAD
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
-=======
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
-
->>>>>>> 68e4c30d619c0bf796ec773f5a0a10b50fa30d92

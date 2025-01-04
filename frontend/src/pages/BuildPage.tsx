@@ -15,10 +15,7 @@ import ReactFlow, {
 import "reactflow/dist/style.css";
 import "../styles/components/BuildPage.scss";
 import { useBuildPageContext } from "../context/BuildPageContext";
-<<<<<<< HEAD
 import { useDataset } from "../context/DatasetContext";
-=======
->>>>>>> 68e4c30d619c0bf796ec773f5a0a10b50fa30d92
 
 const BuildPage = (): JSX.Element => {
   const {
@@ -30,11 +27,8 @@ const BuildPage = (): JSX.Element => {
     setValidationErrors,
   } = useBuildPageContext();
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
-<<<<<<< HEAD
   const { dataset } = useDataset();
   const [isTraining, setIsTraining] = useState(false);
-=======
->>>>>>> 68e4c30d619c0bf796ec773f5a0a10b50fa30d92
 
   const addLayer = (type: string): void => {
     const defaultParams: Record<string, any> = {
@@ -255,22 +249,18 @@ const BuildPage = (): JSX.Element => {
 
   const handleTrain = async (): Promise<void> => {
     const errors = validateLayerParameters();
-<<<<<<< HEAD
     
 
     if (!dataset) {
       alert("No dataset selected! Please select a dataset before training.");
       return;
   }
-=======
->>>>>>> 68e4c30d619c0bf796ec773f5a0a10b50fa30d92
 
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
       alert("Validation failed! Please fix the errors.");
       return;
     }
-<<<<<<< HEAD
     setIsTraining(true);
 
     try {
@@ -281,14 +271,6 @@ const BuildPage = (): JSX.Element => {
         
     };
       console.log(payload)
-=======
-
-    try {
-      // Serialize the payload
-      const payload = serializePayload();
-      console.log("Serialized Payload:", payload);
-
->>>>>>> 68e4c30d619c0bf796ec773f5a0a10b50fa30d92
       // Make a POST request to the backend
       const response = await fetch("http://127.0.0.1:5000/train", {
         method: "POST",
@@ -311,12 +293,8 @@ const BuildPage = (): JSX.Element => {
       setValidationErrors({});
     } catch (error) {
       alert(`An error occurred: ${error}`);
-<<<<<<< HEAD
     } finally {
       setIsTraining(false); }
-=======
-    }
->>>>>>> 68e4c30d619c0bf796ec773f5a0a10b50fa30d92
   };
 
   return (
@@ -336,7 +314,6 @@ const BuildPage = (): JSX.Element => {
             <button onClick={() => addLayer(type)}>Add</button>
           </div>
         ))}
-<<<<<<< HEAD
 
 
             <p className="text-center">
@@ -346,9 +323,6 @@ const BuildPage = (): JSX.Element => {
         
       </div>
       
-=======
-      </div>
->>>>>>> 68e4c30d619c0bf796ec773f5a0a10b50fa30d92
 
       <div className="canvas">
         <ReactFlow
@@ -646,7 +620,6 @@ const BuildPage = (): JSX.Element => {
           )}
         </div>
 
-<<<<<<< HEAD
         <div className="train-section">
           <button
             className="train-button"
@@ -661,12 +634,6 @@ const BuildPage = (): JSX.Element => {
           </button>
           {isTraining && <p>Training in progress. Please wait...</p>}
         </div>
-=======
-        {/* Train Button */}
-        <button className="train-button" onClick={handleTrain}>
-          Train
-        </button>
->>>>>>> 68e4c30d619c0bf796ec773f5a0a10b50fa30d92
       </div>
     </div>
   );
