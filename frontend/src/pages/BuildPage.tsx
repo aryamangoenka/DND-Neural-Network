@@ -15,6 +15,7 @@ import ReactFlow, {
 import "reactflow/dist/style.css";
 import "../styles/components/BuildPage.scss";
 import { useBuildPageContext } from "../context/BuildPageContext";
+import { useDataset } from "../context/DatasetContext";
 
 const BuildPage = (): JSX.Element => {
   const {
@@ -26,6 +27,8 @@ const BuildPage = (): JSX.Element => {
     setValidationErrors,
   } = useBuildPageContext();
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
+  const { dataset } = useDataset();
+  const [isTraining, setIsTraining] = useState(false);
 
   const addLayer = (type: string): void => {
     const defaultParams: Record<string, any> = {
@@ -246,18 +249,28 @@ const BuildPage = (): JSX.Element => {
 
   const handleTrain = async (): Promise<void> => {
     const errors = validateLayerParameters();
+    
+
+    if (!dataset) {
+      alert("No dataset selected! Please select a dataset before training.");
+      return;
+  }
 
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
       alert("Validation failed! Please fix the errors.");
       return;
     }
+    setIsTraining(true);
 
     try {
       // Serialize the payload
-      const payload = serializePayload();
-      console.log("Serialized Payload:", payload);
-
+      const payload = {
+        ...serializePayload(),
+        dataset, // Add the selected dataset to the payload
+        
+    };
+      console.log(payload)
       // Make a POST request to the backend
       const response = await fetch("http://127.0.0.1:5000/train", {
         method: "POST",
@@ -280,7 +293,8 @@ const BuildPage = (): JSX.Element => {
       setValidationErrors({});
     } catch (error) {
       alert(`An error occurred: ${error}`);
-    }
+    } finally {
+      setIsTraining(false); }
   };
 
   return (
@@ -300,7 +314,15 @@ const BuildPage = (): JSX.Element => {
             <button onClick={() => addLayer(type)}>Add</button>
           </div>
         ))}
+
+
+            <p className="text-center">
+                Selected Dataset:{" "}
+                <strong>{dataset || "No dataset selected"}</strong>
+            </p>
+        
       </div>
+      
 
       <div className="canvas">
         <ReactFlow
@@ -598,10 +620,20 @@ const BuildPage = (): JSX.Element => {
           )}
         </div>
 
-        {/* Train Button */}
-        <button className="train-button" onClick={handleTrain}>
-          Train
-        </button>
+        <div className="train-section">
+          <button
+            className="train-button"
+            onClick={handleTrain}
+            disabled={isTraining} // Disable button during training
+          >
+            {isTraining ? (
+              <span className="spinner"></span> // Spinner while training
+            ) : (
+              "Train"
+            )}
+          </button>
+          {isTraining && <p>Training in progress. Please wait...</p>}
+        </div>
       </div>
     </div>
   );
