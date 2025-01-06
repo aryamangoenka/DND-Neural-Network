@@ -2,18 +2,28 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 import numpy as np
 from tensorflow.keras.datasets import mnist, cifar10
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Conv2D, Flatten, MaxPooling2D, Dropout, BatchNormalization
 from sklearn.datasets import load_iris, fetch_california_housing
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 import ssl
 import certifi
+import json
+import os
+from flask_socketio import SocketIO, emit
+import time  # For simulating training updates
 
 app = Flask(__name__)
-CORS(app)
+CORS(app,resources={r"/ws/*": {"origins": "*"}})
+socketio = SocketIO(app, cors_allowed_origins="*")
+app.config["SECRET_KEY"] = "your-secret-key"
+
 
 # Set global SSL context using certifi's CA certificates
 ssl._create_default_https_context = ssl.create_default_context
 
+MODEL_ARCHITECTURE_FILE = "saved_model.json"
 
 @app.route("/")
 def home():
@@ -23,79 +33,104 @@ def home():
 def health_check():
     return jsonify({"status": "running", "message": "Flask backend is operational!"})
 
-
-@app.route("/upload", methods=["POST"])
-def upload_dataset():
-    if "file" not in request.files:
-        return {"error": "No file uploaded"}, 400
-
-    file = request.files["file"]
-    file.save(f"./uploads/{file.filename}")
-    return {"message": f"{file.filename} uploaded successfully!"}, 200
-
-@app.route("/configure", methods=["POST"])
-def configure_model():
-    config = request.json  # JSON payload from frontend
-    return {"message": "Model configured", "config": config}, 200
-
-@app.route("/train", methods=["POST"])
-def train_model():
+@app.route("/save_model", methods=["POST"])
+def save_model():
+    """
+    Save the model architecture received from the frontend.
+    """
     try:
-        # Debugging: Log the incoming request
-        print("Raw Request Data:", request.data)
-        print("Headers:", request.headers)
-
-        # Ensure the Content-Type is application/json
-        if not request.is_json:
-            return jsonify({"error": "Invalid Content-Type. Expected application/json"}), 415
-
-        # Parse JSON payload
         data = request.get_json()
         if not data:
             return jsonify({"error": "No JSON payload received"}), 400
 
-        # Extract nodes, edges, and dataset
-        nodes = data.get("nodes")
-        edges = data.get("edges")
-        dataset = data.get("dataset")
+        # Save model architecture to a file
+        with open(MODEL_ARCHITECTURE_FILE, "w") as f:
+            json.dump(data, f)
 
-        # Validate input structure
-        if not nodes or not edges:
-            return jsonify({"error": "Nodes and edges are required"}), 400
+        return jsonify({"message": "Model architecture saved successfully"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-        # Validate dataset
+@socketio.on("connect", namespace="/ws/train")
+def handle_connect():
+    """Handle WebSocket connection."""
+    print("Client connected to /ws/train")
+    emit("message", {"type": "info", "data": "Connected to WebSocket!"})
+
+@socketio.on("disconnect", namespace="/ws/train")
+def handle_disconnect():
+    """Handle WebSocket disconnection."""
+    print("Client disconnected from /ws/train")
+
+@socketio.on("start_training", namespace="/ws/train")
+def start_training(data):
+    """
+    Handle the WebSocket event to start training and send real-time updates.
+    """
+    try:
+        # Ensure model architecture exists
+        if not os.path.exists(MODEL_ARCHITECTURE_FILE):
+            emit("training_error", {"error": "Model architecture not found. Please save it first."})
+            return
+
+        # Load the saved model architecture
+        with open(MODEL_ARCHITECTURE_FILE, "r") as f:
+            model_architecture = json.load(f)
+
+        # Extract dataset and training configuration
+        dataset = model_architecture.get("dataset")
         if not dataset:
-            return jsonify({"error": "Dataset is required"}), 400
+            emit("training_error", {"error": "Dataset information missing in model architecture"})
+            return
 
-        # Debugging: Log received data
-        print("Received Nodes:", nodes)
-        print("Received Edges:", edges)
-        print("Selected Dataset:", dataset)
+        training_config = data  # Training config comes from WebSocket payload
 
         # Load and preprocess the dataset
         (x_train, y_train), (x_test, y_test) = load_dataset(dataset)
 
-        # Log dataset shapes for debugging
-        print(f"Dataset '{dataset}' loaded successfully!")
-        print(f"Training data shape: {x_train.shape}, {y_train.shape}")
-        print(f"Test data shape: {x_test.shape}, {y_test.shape}")
+        # Build the model
+        model = build_model_from_architecture(model_architecture)
 
-        # Simulate training logic
-        print(f"Simulating training on dataset: {dataset}")
+        # Compile the model
+        model.compile(
+            optimizer=training_config["optimizer"].lower(),
+            loss=training_config["lossFunction"].lower(),
+            metrics=["accuracy"]
+        )
 
-        # Respond with success
-        return jsonify({
-            "message": "Training logic not implemented yet. Dataset loaded successfully.",
-            "status": "success",
-            "dataset": dataset,
-            "train_data_shape": x_train.shape,
-            "test_data_shape": x_test.shape
-        }), 200
+        # Emit a message that training is starting
+        emit("training_start", {"message": "Training has started!"})
+
+        # Simulate model training by epoch
+        epochs = training_config["epochs"]
+        for epoch in range(1, epochs + 1):
+            time.sleep(1)  # Simulate training time per epoch
+            history = model.fit(
+                x_train,
+                y_train,
+                validation_data=(x_test, y_test),
+                batch_size=training_config["batchSize"],
+                epochs=1,
+                verbose=0
+            )
+            # Emit training progress
+            emit("training_progress", {
+                "epoch": epoch,
+                "loss": float(history.history["loss"][-1]),
+                "accuracy": float(history.history["accuracy"][-1]),
+                "val_loss": float(history.history["val_loss"][-1]),
+                "val_accuracy": float(history.history["val_accuracy"][-1])
+            })
+
+        # Emit final training results
+        emit("training_complete", {
+            "message": "Training completed successfully!",
+            "final_loss": float(history.history["loss"][-1]),
+            "final_accuracy": float(history.history["accuracy"][-1])
+        })
 
     except Exception as e:
-        # Handle unexpected errors
-        return jsonify({"error": str(e)}), 500
-
+        emit("training_error", {"error": str(e)})
 
 def load_dataset(dataset_name):
     """
@@ -148,11 +183,70 @@ def load_dataset(dataset_name):
 
     return (x_train, y_train), (x_test, y_test)
 
+def build_model_from_architecture(architecture):
+    """
+    Build a Keras model based on the architecture provided.
+
+    Args:
+        architecture (dict): The model architecture containing nodes and edges.
+
+    Returns:
+        keras.Model: A compiled Keras model.
+    """
+    nodes = architecture["nodes"]
+    edges = architecture["edges"]
+
+    # Validate input and output layers
+    input_layer = next((node for node in nodes if node["type"] == "input"), None)
+    output_layer = next((node for node in nodes if node["type"] == "output"), None)
+
+    if not input_layer or not output_layer:
+        raise ValueError("Model must have both an input and an output layer.")
+
+    # Start building the model
+    model = Sequential()
+
+    # Add layers based on the nodes
+    for node in nodes:
+        layer_type = node["type"]
+        layer_data = node["data"]
+
+        if layer_type == "dense":
+            model.add(Dense(
+                units=layer_data["neurons"],
+                activation=layer_data["activation"].lower()
+            ))
+        elif layer_type == "convolution":
+            model.add(Conv2D(
+                filters=layer_data["filters"],
+                kernel_size=tuple(layer_data["kernelSize"]),
+                strides=tuple(layer_data["stride"]),
+                activation=layer_data["activation"].lower()
+            ))
+        elif layer_type == "maxpooling":
+            model.add(MaxPooling2D(
+                pool_size=tuple(layer_data["poolSize"]),
+                strides=tuple(layer_data["stride"])
+            ))
+        elif layer_type == "flatten":
+            model.add(Flatten())
+        elif layer_type == "dropout":
+            model.add(Dropout(rate=layer_data["rate"]))
+        elif layer_type == "batchnormalization":
+            model.add(BatchNormalization(
+                momentum=layer_data["momentum"],
+                epsilon=layer_data["epsilon"]
+            ))
+        elif layer_type == "input":
+            model.add(Dense(units=layer_data.get("neurons", 1), input_shape=(layer_data.get("shape", 1),)))
+
+    return model
 
 @app.route("/export", methods=["GET"])
 def export_model():
     return {"message": "Model exported successfully!"}
 
+app.debug=True
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    socketio.run(app, host="0.0.0.0", port=5000,debug=True)

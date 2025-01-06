@@ -184,48 +184,172 @@ const BuildPage = (): JSX.Element => {
       const { type, data } = node;
       const nodeErrors: Record<string, string> = {};
 
+      // Ensure at least one input layer exists
+      const inputNodes = nodes.filter((node) => node.type === "input");
+      if (inputNodes.length === 0) {
+        errors["global"] = { inputLayer: "An input layer is required." };
+      } else {
+        // Ensure all input nodes are connected
+        inputNodes.forEach((inputNode) => {
+          const isConnected = edges.some(
+            (edge) => edge.source === inputNode.id
+          );
+          if (!isConnected) {
+            errors[inputNode.id] = {
+              connection:
+                "Input layer must have at least one outgoing connection.",
+            };
+          }
+        });
+      }
+      // Ensure at least one output layer exists
+      const outputNodes = nodes.filter((node) => node.type === "output");
+      if (outputNodes.length === 0) {
+        errors["global"] = {
+          ...(errors["global"] || {}),
+          outputLayer: "An output layer is required.",
+        };
+      } else {
+        // Ensure all output nodes are connected
+        outputNodes.forEach((outputNode) => {
+          const isConnected = edges.some(
+            (edge) => edge.target === outputNode.id
+          );
+          if (!isConnected) {
+            errors[outputNode.id] = {
+              connection:
+                "Output layer must have at least one incoming connection.",
+            };
+          }
+        });
+      }
+
+      // Ensure no disconnected nodes exist
+      const allConnectedNodeIds = new Set(
+        edges.flatMap((edge) => [edge.source, edge.target])
+      );
+      nodes.forEach((node) => {
+        if (!allConnectedNodeIds.has(node.id)) {
+          errors[node.id] = {
+            ...(errors[node.id] || {}),
+            connection: "This layer is not connected to any other layer.",
+          };
+        }
+      });
+
+      // Dense Layer Validation
       if (type === "dense") {
         if (!Number.isInteger(data.neurons) || data.neurons <= 0) {
           nodeErrors.neurons = "Number of neurons must be a positive integer.";
         }
+        if (
+          ![
+            "None",
+            "ReLU",
+            "Sigmoid",
+            "Softmax",
+            "Tanh",
+            "Leaky ReLU",
+          ].includes(data.activation)
+        ) {
+          nodeErrors.activation =
+            "Invalid activation function for dense layer.";
+        }
       }
-
+      // Convolutional Layer Validation
       if (type === "convolution") {
         if (!Number.isInteger(data.filters) || data.filters <= 0) {
-          nodeErrors.filters = "Filters must be a positive integer.";
+          nodeErrors.filters = "Number of filters must be a positive integer.";
         }
         if (
           !Array.isArray(data.kernelSize) ||
+          data.kernelSize.length !== 2 ||
           data.kernelSize.some((v: number) => v <= 0)
         ) {
-          nodeErrors.kernelSize = "Kernel size must be positive integers.";
+          nodeErrors.kernelSize =
+            "Kernel size must be an array of two positive integers.";
         }
         if (
           !Array.isArray(data.stride) ||
+          data.stride.length !== 2 ||
           data.stride.some((v: number) => v <= 0)
         ) {
-          nodeErrors.stride = "Stride must be positive integers.";
+          nodeErrors.stride =
+            "Stride must be an array of two positive integers.";
+        }
+        if (
+          ![
+            "None",
+            "ReLU",
+            "Sigmoid",
+            "Softmax",
+            "Tanh",
+            "Leaky ReLU",
+          ].includes(data.activation)
+        ) {
+          nodeErrors.activation =
+            "Invalid activation function for convolutional layer.";
         }
       }
 
+      // MaxPooling Layer Validation
       if (type === "maxpooling") {
         if (
           !Array.isArray(data.poolSize) ||
+          data.poolSize.length !== 2 ||
           data.poolSize.some((v: number) => v <= 0)
         ) {
-          nodeErrors.poolSize = "Pool size must be positive integers.";
+          nodeErrors.poolSize =
+            "Pool size must be an array of two positive integers.";
         }
         if (
           !Array.isArray(data.stride) ||
+          data.stride.length !== 2 ||
           data.stride.some((v: number) => v <= 0)
         ) {
-          nodeErrors.stride = "Stride must be positive integers.";
+          nodeErrors.stride =
+            "Stride must be an array of two positive integers.";
+        }
+        if (!["valid", "same"].includes(data.padding)) {
+          nodeErrors.padding = "Padding must be 'valid' or 'same'.";
+        }
+      }
+
+      // Dropout Layer Validation
+      if (type === "dropout") {
+        if (typeof data.rate !== "number" || data.rate < 0 || data.rate > 1) {
+          nodeErrors.rate = "Dropout rate must be a number between 0 and 1.";
+        }
+      }
+
+      // Batch Normalization Layer Validation
+      if (type === "batchnormalization") {
+        if (
+          typeof data.momentum !== "number" ||
+          data.momentum <= 0 ||
+          data.momentum >= 1
+        ) {
+          nodeErrors.momentum = "Momentum must be a number between 0 and 1.";
+        }
+        if (typeof data.epsilon !== "number" || data.epsilon <= 0) {
+          nodeErrors.epsilon = "Epsilon must be a positive number.";
+        }
+      }
+
+      // Output Layer Validation
+      if (type === "output") {
+        if (!["None", "Sigmoid", "Softmax"].includes(data.activation)) {
+          nodeErrors.activation =
+            "Invalid activation function for output layer.";
         }
       }
 
       if (Object.keys(nodeErrors).length > 0) {
         errors[node.id] = nodeErrors;
       }
+
+      
+        
     });
 
     return errors;
@@ -247,14 +371,13 @@ const BuildPage = (): JSX.Element => {
     return { nodes: serializedNodes, edges: serializedEdges };
   };
 
-  const handleTrain = async (): Promise<void> => {
+  const handleSaveConfig = async (): Promise<void> => {
     const errors = validateLayerParameters();
-    
 
     if (!dataset) {
       alert("No dataset selected! Please select a dataset before training.");
       return;
-  }
+    }
 
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
@@ -268,11 +391,10 @@ const BuildPage = (): JSX.Element => {
       const payload = {
         ...serializePayload(),
         dataset, // Add the selected dataset to the payload
-        
-    };
-      console.log(payload)
+      };
+      console.log(payload);
       // Make a POST request to the backend
-      const response = await fetch("http://127.0.0.1:5000/train", {
+      const response = await fetch("http://127.0.0.1:5000/save_model", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -289,12 +411,13 @@ const BuildPage = (): JSX.Element => {
 
       const data = await response.json();
       console.log("Response from Backend:", data);
-      alert(data.message || "Training started successfully!");
+      alert(data.message || "Saving started successfully!");
       setValidationErrors({});
     } catch (error) {
       alert(`An error occurred: ${error}`);
     } finally {
-      setIsTraining(false); }
+      setIsTraining(false);
+    }
   };
 
   return (
@@ -315,14 +438,10 @@ const BuildPage = (): JSX.Element => {
           </div>
         ))}
 
-
-            <p className="text-center">
-                Selected Dataset:{" "}
-                <strong>{dataset || "No dataset selected"}</strong>
-            </p>
-        
+        <p className="text-center">
+          Dataset: <strong>{dataset || "No dataset selected"}</strong>
+        </p>
       </div>
-      
 
       <div className="canvas">
         <ReactFlow
@@ -374,7 +493,7 @@ const BuildPage = (): JSX.Element => {
                 </div>
               )}
               {/* Output Layer */}
-              {selectedNode.type=== "output" && (
+              {selectedNode.type === "output" && (
                 <>
                   <label>Activation Function:</label>
                   <select
@@ -382,14 +501,12 @@ const BuildPage = (): JSX.Element => {
                     onChange={(e) =>
                       updateParameter("activation", e.target.value)
                     }
-                    >
+                  >
                     <option value="None">None</option>
                     <option value="Sigmoid">Sigmoid</option>
                     <option value="Softmax">Softmax</option>
                   </select>
-
                 </>
-
               )}
 
               {/* Dense Layer */}
@@ -623,13 +740,13 @@ const BuildPage = (): JSX.Element => {
         <div className="train-section">
           <button
             className="train-button"
-            onClick={handleTrain}
+            onClick={handleSaveConfig}
             disabled={isTraining} // Disable button during training
           >
             {isTraining ? (
               <span className="spinner"></span> // Spinner while training
             ) : (
-              "Train"
+              "Save Model"
             )}
           </button>
           {isTraining && <p>Training in progress. Please wait...</p>}

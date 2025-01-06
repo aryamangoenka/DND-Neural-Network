@@ -1,0 +1,125 @@
+.train-page {
+    display: grid;
+    grid-template-columns: 15% 70% 15%;
+    grid-template-rows: auto;
+    height: 100vh; /* Ensure it fills the full viewport height */
+    width: 100vw; /* Ensure it fills the full viewport width */
+    background-color: #f9f9f9;
+  
+    .left-sidebar,
+    .right-sidebar {
+      background-color: #1f2937;
+      padding: 1rem;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      border-radius: 10px;
+      box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+  
+      h2 {
+        margin-bottom: 1rem;
+        color: #4ade80;
+      }
+  
+      .config-section {
+        width: 100%;
+        margin-bottom: 6rem;
+  
+        label {
+          display: block;
+          margin-bottom: 0.5rem;
+          color: white;
+        }
+  
+        input,
+        select {
+          width: 100%;
+          padding: 0.5rem;
+          margin-bottom: 1rem;
+          border-radius: 5px;
+          border: none;
+          background-color: #4ade80;
+          color: #1f2937;
+        }
+      }
+    }
+  
+    .main-content {
+      background-color: #f3f4f6;
+      padding: 1rem;
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      justify-content: justify-center; /* Spread content evenly */
+      height: 100%; /* Ensures it stretches to fill grid space */
+  
+      h2 {
+        margin-bottom: 1rem;
+        color: #4ade80;
+      }
+  
+      .chart-section,
+      .log-section {
+        margin-top: 1rem;
+        background-color: #e5e7eb;
+        padding: 1rem;
+        border-radius: 8px;
+        text-align: center;
+        flex: 1; /* Make sections take up equal space */
+        
+      }
+    }
+  
+    .start-button {
+      background-color: #4ade80;
+      color: white;
+      padding: 0.7rem 1.5rem;
+      border: none;
+      border-radius: 5px;
+      font-size: 1.2rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.3s;
+  
+      &:hover {
+        background-color: #22c55e;
+      }
+  
+      &:disabled {
+        background-color: #6c757d;
+        cursor: not-allowed;
+      }
+    }
+    .stop-button {
+        background-color: #ef4444; /* Red for stop button */
+        color: white;
+        padding: 0.7rem 1.5rem;
+        border: none;
+        border-radius: 5px;
+        font-size: 1.2rem;
+        font-weight: bold;
+        cursor: pointer;
+        transition: background-color 0.3s;
+      
+        &:hover {
+          background-color: #dc2626; /* Darker red on hover */
+        }
+      
+        &:disabled {
+          background-color: #6c757d; /* Gray for disabled */
+          cursor: not-allowed;
+        }
+      }
+      
+      .button-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem; /* Adds space between Start and Stop buttons */
+        margin-top: 2rem; /* Centers the buttons vertically in the sidebar */
+      }
+      
+
+  }
+  
