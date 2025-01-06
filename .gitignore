@@ -23,7 +23,7 @@ dist-ssr
 *.sln
 *.sw?
 venv/
-* text=auto
+
 
 
 # Python cache files
