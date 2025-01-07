@@ -347,9 +347,6 @@ const BuildPage = (): JSX.Element => {
       if (Object.keys(nodeErrors).length > 0) {
         errors[node.id] = nodeErrors;
       }
-
-      
-        
     });
 
     return errors;
@@ -534,6 +531,22 @@ const BuildPage = (): JSX.Element => {
                     <option value="Tanh">Tanh</option>
                     <option value="Leaky ReLU">Leaky ReLU</option>
                   </select>
+                </>
+              )}
+              {selectedNode.type === "dropout" && (
+                <>
+                  <label>Dropout Rate:</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    value={selectedNode.data.rate || 0.2} // Default rate is 0.2
+                    onChange={
+                      (e) =>
+                        updateParameter("rate", parseFloat(e.target.value) || 0) // Parse the value as a float
+                    }
+                  />
                 </>
               )}
 

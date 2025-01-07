@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { io, Socket } from "socket.io-client"; // Import the Socket.IO client
 import "../styles/components/TrainPage.scss";
 import { useDataset } from "../context/DatasetContext";
 
@@ -18,9 +19,9 @@ const TrainPage = (): JSX.Element => {
     val_loss: 0,
     val_accuracy: 0,
   });
-  const socketRef = useRef<WebSocket | null>(null);
+  const socketRef = useRef<Socket | null>(null); // Use Socket.IO client instance
 
-  const handleTrain = async (): Promise<void> => {
+  const handleTrain = (): void => {
     if (!dataset) {
       alert("No dataset selected! Please select a dataset before training.");
       return;
@@ -28,62 +29,61 @@ const TrainPage = (): JSX.Element => {
 
     setIsTraining(true);
 
-    try {
-      const payload = {
-        dataset,
-        lossFunction,
-        optimizer,
-        learningRate,
-        batchSize,
-        epochs,
-      };
+    const payload = {
+      dataset,
+      lossFunction,
+      optimizer,
+      learningRate,
+      batchSize,
+      epochs,
+    };
 
-      console.log(payload);
+    console.log(payload);
 
-      // Open WebSocket connection
-      socketRef.current = new WebSocket("ws://127.0.0.1:5000/ws/train");
-
-      // Send training configuration to WebSocket on connection
-      socketRef.current.onopen = () => {
-        console.log("WebSocket connected");
-        socketRef.current?.send(JSON.stringify(payload));
-      };
-
-      // Listen for messages from the WebSocket
-      socketRef.current.onmessage = (event) => {
-        const message = JSON.parse(event.data);
-        console.log("WebSocket message received:", message);
-
-        // Update training progress or metrics
-        if (message.type === "progress") {
-          setProgress((prev) => `${prev}\n${message.data}`);
-        } else if (message.type === "metrics") {
-          setLiveMetrics(message.data);
-        }
-      };
-
-      // Handle WebSocket errors
-      socketRef.current.onerror = (error) => {
-        console.error("WebSocket error:", error);
-        alert("An error occurred with the WebSocket connection.");
-        setIsTraining(false);
-      };
-
-      // Close WebSocket connection on training completion
-      socketRef.current.onclose = () => {
-        console.log("WebSocket connection closed");
-        setIsTraining(false);
-      };
-    } catch (error) {
-      alert(`An error occurred: ${error}`);
-      setIsTraining(false);
-    }
+    // Send training configuration to the server
+    socketRef.current?.emit("start_training", payload); // Emit 'start_training' event to the server
   };
 
-  // Cleanup WebSocket on component unmount
+  // Handle WebSocket connection setup
   useEffect(() => {
+    // Initialize Socket.IO client
+    const socket = io("http://127.0.0.1:5000"); // Connect to the backend server
+    socketRef.current = socket;
+
+    socket.on("connect", () => {
+      console.log("Socket.IO connected:", socket.id);
+    });
+
+    // Listen for training progress updates
+    socket.on("training_progress", (data) => {
+      console.log("Training progress received:", data);
+      setProgress((prev) => `${prev}\nEpoch ${data.epoch}: ${data.progress}`);
+      setLiveMetrics(data);
+    });
+
+    // Listen for training start event
+    socket.on("training_start", (data) => {
+      console.log("Training started:", data.message);
+      setProgress((prev) => `${prev}\n${data.message}`);
+    });
+
+    // Listen for training complete event
+    socket.on("training_complete", (data) => {
+      console.log("Training complete:", data.message);
+      setProgress((prev) => `${prev}\n${data.message}`);
+      setIsTraining(false);
+    });
+
+    // Listen for training errors
+    socket.on("training_error", (data) => {
+      console.error("Training error:", data.error);
+      setProgress((prev) => `${prev}\nError: ${data.error}`);
+      setIsTraining(false);
+    });
+
+    // Cleanup on component unmount
     return () => {
-      socketRef.current?.close();
+      socket.disconnect();
     };
   }, []);
 
@@ -200,7 +200,7 @@ const TrainPage = (): JSX.Element => {
             className="stop-button"
             onClick={() => {
               setIsTraining(false);
-              socketRef.current?.close(); // Close WebSocket connection
+              socketRef.current?.disconnect(); // Disconnect the Socket.IO connection
             }}
             disabled={!isTraining}
           >

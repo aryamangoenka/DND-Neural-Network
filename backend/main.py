@@ -1,27 +1,17 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-import numpy as np
-from tensorflow.keras.datasets import mnist, cifar10
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Conv2D, Flatten, MaxPooling2D, Dropout, BatchNormalization
-from sklearn.datasets import load_iris, fetch_california_housing
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
-import ssl
-import certifi
+from flask_socketio import SocketIO, emit
 import json
 import os
-from flask_socketio import SocketIO, emit
-import time  # For simulating training updates
+import time
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Conv2D, Flatten, MaxPooling2D, Dropout, BatchNormalization, Input
+from dataset_loader import load_dataset  # Import the load_dataset function
 
 app = Flask(__name__)
-CORS(app,resources={r"/ws/*": {"origins": "*"}})
+CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
 app.config["SECRET_KEY"] = "your-secret-key"
-
-
-# Set global SSL context using certifi's CA certificates
-ssl._create_default_https_context = ssl.create_default_context
 
 MODEL_ARCHITECTURE_FILE = "saved_model.json"
 
@@ -51,22 +41,30 @@ def save_model():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@socketio.on("connect", namespace="/ws/train")
+@socketio.on("connect")
 def handle_connect():
     """Handle WebSocket connection."""
-    print("Client connected to /ws/train")
+    print("Client connected to WebSocket")
     emit("message", {"type": "info", "data": "Connected to WebSocket!"})
 
-@socketio.on("disconnect", namespace="/ws/train")
+@socketio.on("disconnect")
 def handle_disconnect():
     """Handle WebSocket disconnection."""
-    print("Client disconnected from /ws/train")
+    print("Client disconnected from WebSocket")
 
-@socketio.on("start_training", namespace="/ws/train")
+@socketio.on("start_training")
 def start_training(data):
     """
     Handle the WebSocket event to start training and send real-time updates.
     """
+    LOSS_FUNCTION_MAPPING = {
+        "Categorical Cross-Entropy": "categorical_crossentropy",
+        "Binary Cross-Entropy": "binary_crossentropy",
+        "Mean Squared Error": "mse",
+        "Mean Absolute Error": "mae",
+        "Huber Loss": "huber"
+    }
+
     try:
         # Ensure model architecture exists
         if not os.path.exists(MODEL_ARCHITECTURE_FILE):
@@ -84,17 +82,24 @@ def start_training(data):
             return
 
         training_config = data  # Training config comes from WebSocket payload
+        print(training_config)
 
-        # Load and preprocess the dataset
+        # Map loss function
+        loss_function = LOSS_FUNCTION_MAPPING.get(training_config["lossFunction"])
+        if not loss_function:
+            emit("training_error", {"error": f"Invalid loss function: {training_config['lossFunction']}"})
+            return
+
+        # Load and preprocess the dataset using load_dataset
         (x_train, y_train), (x_test, y_test) = load_dataset(dataset)
 
         # Build the model
-        model = build_model_from_architecture(model_architecture)
+        model = build_model_from_architecture(model_architecture, x_train.shape[1:],dataset)
 
         # Compile the model
         model.compile(
             optimizer=training_config["optimizer"].lower(),
-            loss=training_config["lossFunction"].lower(),
+            loss=loss_function,
             metrics=["accuracy"]
         )
 
@@ -132,63 +137,13 @@ def start_training(data):
     except Exception as e:
         emit("training_error", {"error": str(e)})
 
-def load_dataset(dataset_name):
-    """
-    Loads and preprocesses the dataset based on the name.
-
-    Args:
-        dataset_name (str): Name of the dataset to load.
-
-    Returns:
-        Tuple: (x_train, y_train), (x_test, y_test)
-    """
-    if dataset_name == "MNIST":
-        # Load MNIST dataset
-        (x_train, y_train), (x_test, y_test) = mnist.load_data()
-        x_train = x_train.reshape(-1, 28, 28, 1).astype("float32") / 255.0
-        x_test = x_test.reshape(-1, 28, 28, 1).astype("float32") / 255.0
-        y_train = np.eye(10)[y_train]  # One-hot encode labels
-        y_test = np.eye(10)[y_test]
-
-    elif dataset_name == "Iris":
-        # Load Iris dataset
-        data = load_iris()
-        X, y = data.data, data.target
-        enc = OneHotEncoder(sparse_output=False)
-        y = enc.fit_transform(y.reshape(-1, 1))  # One-hot encode labels
-        x_train, x_test, y_train, y_test = train_test_split(
-            X, y, test_size=0.2, random_state=42
-        )
-
-    elif dataset_name == "CIFAR-10":
-        # Load CIFAR-10 dataset
-        (x_train, y_train), (x_test, y_test) = cifar10.load_data()
-        x_train = x_train.astype("float32") / 255.0
-        x_test = x_test.astype("float32") / 255.0
-        y_train = np.eye(10)[y_train.flatten()]  # One-hot encode labels
-        y_test = np.eye(10)[y_test.flatten()]
-
-    elif dataset_name == "California housing":
-        # Load California Housing dataset
-        data = fetch_california_housing()
-        X, y = data.data, data.target
-        scaler = StandardScaler()
-        X = scaler.fit_transform(X)  # Normalize features
-        x_train, x_test, y_train, y_test = train_test_split(
-            X, y, test_size=0.2, random_state=42
-        )
-
-    else:
-        raise ValueError(f"Dataset '{dataset_name}' not supported.")
-
-    return (x_train, y_train), (x_test, y_test)
-
-def build_model_from_architecture(architecture):
+def build_model_from_architecture(architecture, input_shape,dataset_name):
     """
     Build a Keras model based on the architecture provided.
 
     Args:
         architecture (dict): The model architecture containing nodes and edges.
+        input_shape (tuple): Shape of the input data.
 
     Returns:
         keras.Model: A compiled Keras model.
@@ -199,7 +154,7 @@ def build_model_from_architecture(architecture):
     # Validate input and output layers
     input_layer = next((node for node in nodes if node["type"] == "input"), None)
     output_layer = next((node for node in nodes if node["type"] == "output"), None)
-
+    print(output_layer)
     if not input_layer or not output_layer:
         raise ValueError("Model must have both an input and an output layer.")
 
@@ -221,7 +176,8 @@ def build_model_from_architecture(architecture):
                 filters=layer_data["filters"],
                 kernel_size=tuple(layer_data["kernelSize"]),
                 strides=tuple(layer_data["stride"]),
-                activation=layer_data["activation"].lower()
+                activation=layer_data["activation"].lower(),
+                input_shape=input_shape if len(model.layers) == 0 else None
             ))
         elif layer_type == "maxpooling":
             model.add(MaxPooling2D(
@@ -238,15 +194,43 @@ def build_model_from_architecture(architecture):
                 epsilon=layer_data["epsilon"]
             ))
         elif layer_type == "input":
-            model.add(Dense(units=layer_data.get("neurons", 1), input_shape=(layer_data.get("shape", 1),)))
+            model.add(Input(shape=input_shape))
+        print(model.summary())
 
+    # Configure the output layer dynamically based on the dataset
+    output_units = determine_output_units(dataset_name)
+    model.add(Dense(
+        units=output_units,  # Dynamically determine number of units
+        activation=output_layer["data"]["activation"].lower()  # Use user-defined activation
+    ))
+     
     return model
+    
+def determine_output_units(dataset_name):
+    """
+    Determine the number of units for the output layer based on the dataset.
 
+    Args:
+        dataset_name (str): The name of the dataset (e.g., 'Iris', 'MNIST', 'CIFAR-10', 'California Housing').
+
+    Returns:
+        int: The number of units for the output layer.
+    """
+    if dataset_name == "Iris":
+        return 3  # 3 classes
+    elif dataset_name == "MNIST":
+        return 10  # 10 digits
+    elif dataset_name == "CIFAR-10":
+        return 10  # 10 classes
+    elif dataset_name == "California Housing":
+        return 1  # Regression
+    else:
+        raise ValueError(f"Unknown dataset: {dataset_name}. Only 'Iris', 'MNIST', 'CIFAR-10', and 'California Housing' are supported.")
 @app.route("/export", methods=["GET"])
 def export_model():
     return {"message": "Model exported successfully!"}
 
-app.debug=True
 
 if __name__ == "__main__":
-    socketio.run(app, host="0.0.0.0", port=5000,debug=True)
+    import eventlet
+    socketio.run(app, host="0.0.0.0", port=5000, debug=False)
