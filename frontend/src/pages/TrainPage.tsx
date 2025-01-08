@@ -1,24 +1,31 @@
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { io, Socket } from "socket.io-client"; // Import the Socket.IO client
 import "../styles/components/TrainPage.scss";
 import { useDataset } from "../context/DatasetContext";
+import { useTrainPageContext } from "../context/TrainPageContext";
+
 
 const TrainPage = (): JSX.Element => {
   const { dataset } = useDataset();
-  const [lossFunction, setLossFunction] = useState("Categorical Cross-Entropy");
-  const [optimizer, setOptimizer] = useState("Adam");
-  const [learningRate, setLearningRate] = useState(0.001);
-  const [batchSize, setBatchSize] = useState(32);
-  const [epochs, setEpochs] = useState(10);
-  const [isTraining, setIsTraining] = useState(false);
-  const [progress, setProgress] = useState<string>(""); // Store training logs/progress
-  const [liveMetrics, setLiveMetrics] = useState({
-    epoch: 0,
-    loss: 0,
-    accuracy: 0,
-    val_loss: 0,
-    val_accuracy: 0,
-  });
+  const {
+    lossFunction,
+    setLossFunction,
+    optimizer,
+    setOptimizer,
+    learningRate,
+    setLearningRate,
+    batchSize,
+    setBatchSize,
+    epochs,
+    setEpochs,
+    isTraining,
+    setIsTraining,
+    progress,
+    setProgress,
+    liveMetrics,
+    setLiveMetrics,
+  } = useTrainPageContext();
+  ;
   const socketRef = useRef<Socket | null>(null); // Use Socket.IO client instance
 
   const handleTrain = (): void => {

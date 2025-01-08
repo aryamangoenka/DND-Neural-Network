@@ -1,26 +1,86 @@
-import React, { createContext, useState, useContext, ReactNode } from "react";
+import React, { createContext, useContext, useState } from "react";
 
-interface TrainingContextType {
-  isTrainingAllowed: boolean;
-  setIsTrainingAllowed: (value: boolean) => void;
+interface LiveMetrics {
+  epoch: number;
+  loss: number;
+  accuracy: number;
+  val_loss: number;
+  val_accuracy: number;
 }
 
-const TrainingContext = createContext<TrainingContextType | undefined>(undefined);
+interface TrainPageContextProps {
+  lossFunction: string;
+  setLossFunction: React.Dispatch<React.SetStateAction<string>>;
+  optimizer: string;
+  setOptimizer: React.Dispatch<React.SetStateAction<string>>;
+  learningRate: number;
+  setLearningRate: React.Dispatch<React.SetStateAction<number>>;
+  batchSize: number;
+  setBatchSize: React.Dispatch<React.SetStateAction<number>>;
+  epochs: number;
+  setEpochs: React.Dispatch<React.SetStateAction<number>>;
+  isTraining: boolean;
+  setIsTraining: React.Dispatch<React.SetStateAction<boolean>>;
+  progress: string;
+  setProgress: React.Dispatch<React.SetStateAction<string>>;
+  liveMetrics: LiveMetrics;
+  setLiveMetrics: React.Dispatch<React.SetStateAction<LiveMetrics>>;
+}
 
-export const TrainingProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [isTrainingAllowed, setIsTrainingAllowed] = useState(false);
+const TrainPageContext = createContext<TrainPageContextProps | undefined>(
+  undefined
+);
+
+export const TrainPageProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
+  const [lossFunction, setLossFunction] = useState("Categorical Cross-Entropy");
+  const [optimizer, setOptimizer] = useState("Adam");
+  const [learningRate, setLearningRate] = useState(0.001);
+  const [batchSize, setBatchSize] = useState(32);
+  const [epochs, setEpochs] = useState(10);
+  const [isTraining, setIsTraining] = useState(false);
+  const [progress, setProgress] = useState<string>("");
+  const [liveMetrics, setLiveMetrics] = useState<LiveMetrics>({
+    epoch: 0,
+    loss: 0,
+    accuracy: 0,
+    val_loss: 0,
+    val_accuracy: 0,
+  });
 
   return (
-    <TrainingContext.Provider value={{ isTrainingAllowed, setIsTrainingAllowed }}>
+    <TrainPageContext.Provider
+      value={{
+        lossFunction,
+        setLossFunction,
+        optimizer,
+        setOptimizer,
+        learningRate,
+        setLearningRate,
+        batchSize,
+        setBatchSize,
+        epochs,
+        setEpochs,
+        isTraining,
+        setIsTraining,
+        progress,
+        setProgress,
+        liveMetrics,
+        setLiveMetrics,
+      }}
+    >
       {children}
-    </TrainingContext.Provider>
+    </TrainPageContext.Provider>
   );
 };
 
-export const useTrainingContext = (): TrainingContextType => {
-  const context = useContext(TrainingContext);
+export const useTrainPageContext = (): TrainPageContextProps => {
+  const context = useContext(TrainPageContext);
   if (!context) {
-    throw new Error("useTrainingContext must be used within a TrainingProvider");
+    throw new Error(
+      "useTrainPageContext must be used within a TrainPageProvider"
+    );
   }
   return context;
 };

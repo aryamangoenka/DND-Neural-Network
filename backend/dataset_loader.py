@@ -2,12 +2,14 @@ from datasets.iris import load_iris_dataset
 from datasets.mnist import load_mnist_dataset
 from datasets.cifar10 import load_cifar10_dataset
 from datasets.california import load_california_housing_dataset
+from datasets.breastcancer import load_breast_cancer_dataset
 import json
 DATASET_LOADERS = {
     "Iris": load_iris_dataset,
     "MNIST": load_mnist_dataset,
     "CIFAR-10": load_cifar10_dataset,
     "California housing": load_california_housing_dataset,
+    "Breast Cancer": load_breast_cancer_dataset
 }
 
 MODEL_ARCHITECTURE_FILE = "saved_model.json"

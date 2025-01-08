@@ -12,11 +12,28 @@ const HomePage = ({}: HomePageProps) => {
 
     // Predefined datasets
     const datasets = [
-        { name: "Iris", description: "Iris dataset for classification tasks." },
-        { name: "MNIST", description: "MNIST dataset for image classification." },
-        { name: "California housing", description: "Titanic dataset for binary classification." },
-        { name: "CIFAR-10", description: "Wine Quality dataset for regression tasks." },
+        { 
+            name: "Iris", 
+            description: "Iris dataset for multi-class classification tasks." 
+        },
+        { 
+            name: "MNIST", 
+            description: "MNIST dataset for image classification." 
+        },
+        { 
+            name: "California Housing", 
+            description: "California Housing dataset for regression tasks." 
+        },
+        { 
+            name: "CIFAR-10", 
+            description: "CIFAR-10 dataset for multi-class image classification." 
+        },
+        { 
+            name: "Breast Cancer", 
+            description: "Breast Cancer Wisconsin dataset for binary classification." 
+        }
     ];
+    
 
     // State to track selected dataset
     const [selectedDataset, setSelectedDataset] = useState<string>("");

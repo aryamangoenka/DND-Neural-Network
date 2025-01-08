@@ -211,7 +211,7 @@ def determine_output_units(dataset_name):
     Determine the number of units for the output layer based on the dataset.
 
     Args:
-        dataset_name (str): The name of the dataset (e.g., 'Iris', 'MNIST', 'CIFAR-10', 'California Housing').
+        dataset_name (str): The name of the dataset (e.g., 'Iris', 'MNIST', 'CIFAR-10', 'California Housing', 'Breast Cancer').
 
     Returns:
         int: The number of units for the output layer.
@@ -224,8 +224,10 @@ def determine_output_units(dataset_name):
         return 10  # 10 classes
     elif dataset_name == "California Housing":
         return 1  # Regression
+    elif dataset_name == "Breast Cancer":
+        return 1  # Binary classification
     else:
-        raise ValueError(f"Unknown dataset: {dataset_name}. Only 'Iris', 'MNIST', 'CIFAR-10', and 'California Housing' are supported.")
+        raise ValueError(f"Unknown dataset: {dataset_name}. Only 'Iris', 'MNIST', 'CIFAR-10', 'California Housing', and 'Breast Cancer' are supported.")
 @app.route("/export", methods=["GET"])
 def export_model():
     return {"message": "Model exported successfully!"}
