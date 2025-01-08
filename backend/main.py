@@ -7,6 +7,27 @@ import time
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Conv2D, Flatten, MaxPooling2D, Dropout, BatchNormalization, Input
 from dataset_loader import load_dataset  # Import the load_dataset function
+from tensorflow.keras.callbacks import Callback
+from sklearn.metrics import confusion_matrix, mean_squared_error, r2_score
+import numpy as np
+
+class RealTimeUpdateCallback(Callback):
+    def __init__(self, socketio, total_epochs):
+        self.socketio = socketio
+        self.total_epochs = total_epochs
+
+    def on_epoch_end(self, epoch, logs=None):
+        """Emit training progress after each epoch."""
+        if logs is not None:
+            self.socketio.emit("training_progress", {
+                "epoch": epoch + 1,
+                "total_epochs": self.total_epochs,
+                "loss": logs.get("loss"),
+                "accuracy": logs.get("accuracy"),
+                "val_loss": logs.get("val_loss"),
+                "val_accuracy": logs.get("val_accuracy"),
+            })
+
 
 app = Flask(__name__)
 CORS(app)
@@ -106,33 +127,47 @@ def start_training(data):
         # Emit a message that training is starting
         emit("training_start", {"message": "Training has started!"})
 
-        # Simulate model training by epoch
-        epochs = training_config["epochs"]
-        for epoch in range(1, epochs + 1):
-            time.sleep(1)  # Simulate training time per epoch
-            history = model.fit(
-                x_train,
-                y_train,
-                validation_data=(x_test, y_test),
-                batch_size=training_config["batchSize"],
-                epochs=1,
-                verbose=0
-            )
-            # Emit training progress
-            emit("training_progress", {
-                "epoch": epoch,
-                "loss": float(history.history["loss"][-1]),
-                "accuracy": float(history.history["accuracy"][-1]),
-                "val_loss": float(history.history["val_loss"][-1]),
-                "val_accuracy": float(history.history["val_accuracy"][-1])
-            })
+        # Define total epochs
+        total_epochs = training_config["epochs"]
+
+        # Add the custom callback
+        callback = RealTimeUpdateCallback(socketio, total_epochs)
+
+        # Train the model
+        model.fit(
+            x_train,
+            y_train,
+            validation_data=(x_test, y_test),
+            batch_size=training_config["batchSize"],
+            epochs=total_epochs,
+            verbose=0,  # Suppress built-in progress bar
+            callbacks=[callback]  # Add the callback
+        )
+        final_metrics={}
+
+        # Additional metrics for classification datasets
+        if dataset in ["Iris", "MNIST", "CIFAR-10", "Breast Cancer"]:
+            predictions = model.predict(x_test)
+            y_pred = np.argmax(predictions, axis=1)
+            y_true = np.argmax(y_test, axis=1)
+            conf_matrix = confusion_matrix(y_true, y_pred).tolist()  # Convert to list for JSON serialization
+            final_metrics["confusion_matrix"] = conf_matrix
+            print(final_metrics)
+
+        # Additional metrics for California Housing
+        elif dataset == "California Housing":
+            predictions = model.predict(x_test).flatten()
+            rmse = np.sqrt(mean_squared_error(y_test, predictions))
+            r2 = r2_score(y_test, predictions)
+            final_metrics["rmse"] = rmse
+            final_metrics["r2"] = r2
+
+
 
         # Emit final training results
-        emit("training_complete", {
-            "message": "Training completed successfully!",
-            "final_loss": float(history.history["loss"][-1]),
-            "final_accuracy": float(history.history["accuracy"][-1])
-        })
+        print("Payload emitted to frontend:", {"message": "Training completed successfully!", "metrics": final_metrics})
+
+        emit("training_complete", {"message": "Training completed successfully!","metrics":final_metrics})
 
     except Exception as e:
         emit("training_error", {"error": str(e)})

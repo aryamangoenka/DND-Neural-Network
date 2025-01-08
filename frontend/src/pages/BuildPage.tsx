@@ -358,22 +358,19 @@ const BuildPage = (): JSX.Element => {
           nodeErrors.type = `Layer type '${type}' is not compatible with the Iris dataset.`;
         }
       }
-      if (dataset === "MNIST") {
+      if (dataset === "MNIST" || dataset === "CIFAR-10") {
         // Ensure no incompatible layers for MNIST
         const hasConvolutionLayer = nodes.some(
           (node) => node.type === "convolution"
-        );
-        const hasMaxPoolingLayer = nodes.some(
-          (node) => node.type === "maxpooling"
         );
         
         if (
           type &&
           ["dense"].includes(type) &&
-          !hasConvolutionLayer &&
-          !hasMaxPoolingLayer
+          !hasConvolutionLayer
+
         ) {
-          nodeErrors.type = `Layer type '${type}' should not be used alone for MNIST dataset. Add a convolutional or max-pooling layer.`;
+          nodeErrors.type = `Layer type '${type}' should not be used alone for MNIST dataset. Add a convolutional.`;
         }
 
 
@@ -396,19 +393,7 @@ const BuildPage = (): JSX.Element => {
         }
       }
 
-      // CIFAR-10 Dataset Specific Validations
-      if (dataset === "CIFAR-10") {
-        // Ensure no incompatible layers for CIFAR-10
-        if (type && ["dense"].includes(type)) {
-          nodeErrors.type = `Layer type '${type}' should not be used alone for CIFAR-10 dataset. Consider adding convolutional and max-pooling layers.`;
-        }
-
-        // Output Layer Activation Check
-        if (type === "output" && data.activation !== "Softmax") {
-          nodeErrors.activation =
-            "Output layer must use Softmax activation for CIFAR-10 dataset.";
-        }
-      }
+      
 
       // California Housing Dataset Specific Validations
       if (dataset === "California Housing") {

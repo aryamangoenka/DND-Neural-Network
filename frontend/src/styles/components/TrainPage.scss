@@ -54,7 +54,11 @@
       justify-content: justify-center; /* Spread content evenly */
       height: 100%; /* Ensures it stretches to fill grid space */
   
-      h2 {
+      h2  {
+        margin-bottom: 1rem;
+        color: #4ade80;
+      }
+      h3  {
         margin-bottom: 1rem;
         color: #4ade80;
       }
@@ -119,6 +123,115 @@
         gap: 1rem; /* Adds space between Start and Stop buttons */
         margin-top: 2rem; /* Centers the buttons vertically in the sidebar */
       }
+      .progress-bar {
+        width: 100%;
+        background-color: #e0e0e0;
+        border-radius: 5px;
+        overflow: hidden;
+        margin: 10px 0;
+      }
+      
+      .progress-bar-fill {
+        height: 25px;
+        background-color: #4caf50;
+        text-align: center;
+        line-height: 25px;
+        color: white;
+        transition: width 0.3s ease-in-out;
+      }
+      .chart-section {
+        margin: 20px 0;
+      }
+      
+      .progress-bar {
+        width: 100%;
+        background-color: #e0e0e0;
+        border-radius: 5px;
+        overflow: hidden;
+        margin: 10px 0;
+      }
+      
+      .progress-bar-fill {
+        height: 25px;
+        background-color: #4caf50;
+        text-align: center;
+        line-height: 25px;
+        color: white;
+        transition: width 0.3s ease-in-out;
+      }
+      .charts-container {
+        display: flex; /* Arrange children in a row */
+        justify-content: space-between; /* Add space between graphs */
+        gap: 20px; /* Adjust gap between graphs */
+        margin-top: 20px; /* Add some spacing above the graphs */
+      }
+      
+      .chart-wrapper {
+        flex: 1; /* Ensure equal width for both charts */
+        max-width: 48%; /* Limit the width to fit side by side */
+        min-width: 300px; /* Ensure graphs don't shrink too much */
+      }
+      .confusion-matrix-container {
+        margin: 20px auto;
+        text-align: center;
+        width: 100%;
+        max-width: 600px;
+        overflow-x: auto;
+      }
+      
+      .confusion-matrix {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 0 auto;
+        font-family: Arial, sans-serif;
+        text-align: center;
+      }
+      
+      .confusion-matrix th {
+        background-color: #4caf50; /* Green header background */
+        color: white;
+        font-weight: bold;
+        padding: 10px;
+      }
+      
+      .confusion-matrix td {
+        border: 1px solid #ddd;
+        padding: 10px;
+        font-size: 14px;
+        font-weight: bold;
+        position: relative;
+        color: #000; /* Default black text */
+      }
+      
+      /* Dynamic background gradient based on value */
+      .confusion-matrix td[data-value] {
+        background-color: rgba(76, 175, 80, calc(var(--value) / 100)); /* Green gradient */
+        color: white; /* Ensure text is visible on darker backgrounds */
+      }
+      
+      .confusion-matrix td[data-value="0"] {
+        background-color: #f9f9f9; /* Light gray for zero values */
+        color: #666; /* Dark gray for better readability */
+      }
+      
+      .confusion-matrix td[data-value]:hover {
+        background-color: #3e8e41; /* Dark green on hover */
+        color: white;
+      }
+      
+      .confusion-matrix tr:nth-child(even) td {
+        background-color: rgba(76, 175, 80, calc(var(--value) / 100)) !important; /* Consistent gradient for even rows */
+      }
+      
+      /* Header styling for first column */
+      .confusion-matrix th:first-child {
+        background-color: #e8f5e9; /* Light green */
+        color: #2e7d32; /* Dark green */
+      }
+      
+      
+      
+      
       
 
   }
