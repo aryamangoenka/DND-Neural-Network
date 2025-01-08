@@ -19,6 +19,6 @@ def load_california_housing_dataset():
     return (x_train, y_train), (x_test, y_test)
 
 if __name__=="__main__":
-    (x_train, y_train), (x_test, y_test) = load_iris_dataset()
+    (x_train, y_train), (x_test, y_test) = load_california_housing_dataset()
     print(f"x_train shape: {x_train.shape}, y_train shape: {y_train.shape}")
     print(f"x_test shape: {x_test.shape}, y_test shape: {y_test.shape}")

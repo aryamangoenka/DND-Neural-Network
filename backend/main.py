@@ -195,14 +195,18 @@ def build_model_from_architecture(architecture, input_shape,dataset_name):
             ))
         elif layer_type == "input":
             model.add(Input(shape=input_shape))
-        print(model.summary())
+        
 
     # Configure the output layer dynamically based on the dataset
     output_units = determine_output_units(dataset_name)
+    activation=output_layer["data"]["activation"].lower()  
+    if activation=="none":
+        activation=None
     model.add(Dense(
         units=output_units,  # Dynamically determine number of units
-        activation=output_layer["data"]["activation"].lower()  # Use user-defined activation
+        activation=activation# Use user-defined activation
     ))
+    print(model.summary())
      
     return model
     

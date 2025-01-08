@@ -8,7 +8,7 @@ DATASET_LOADERS = {
     "Iris": load_iris_dataset,
     "MNIST": load_mnist_dataset,
     "CIFAR-10": load_cifar10_dataset,
-    "California housing": load_california_housing_dataset,
+    "California Housing": load_california_housing_dataset,
     "Breast Cancer": load_breast_cancer_dataset
 }
 

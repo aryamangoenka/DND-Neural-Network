@@ -343,6 +343,100 @@ const BuildPage = (): JSX.Element => {
             "Invalid activation function for output layer.";
         }
       }
+      // Iris-specific validations
+      if (dataset === "Iris") {
+        // Output Layer Validation
+        if (type === "output") {
+          if (data.activation !== "Softmax") {
+            nodeErrors.activation =
+              "Output layer must use Softmax activation for Iris dataset.";
+          }
+        }
+
+        // Ensure no incompatible layers for Iris
+        if ([type && "convolution", "maxpooling", "flatten"].includes(type)) {
+          nodeErrors.type = `Layer type '${type}' is not compatible with the Iris dataset.`;
+        }
+      }
+      if (dataset === "MNIST") {
+        // Ensure no incompatible layers for MNIST
+        const hasConvolutionLayer = nodes.some(
+          (node) => node.type === "convolution"
+        );
+        const hasMaxPoolingLayer = nodes.some(
+          (node) => node.type === "maxpooling"
+        );
+        
+        if (
+          type &&
+          ["dense"].includes(type) &&
+          !hasConvolutionLayer &&
+          !hasMaxPoolingLayer
+        ) {
+          nodeErrors.type = `Layer type '${type}' should not be used alone for MNIST dataset. Add a convolutional or max-pooling layer.`;
+        }
+
+
+        // Ensure MaxPooling and Convolution layers are followed by valid layers
+        if (type === "convolution" || type === "maxpooling") {
+          const isFlattenConnected = edges.some((edge) =>
+            nodes.some(
+              (targetNode) => edge.source === node.id && targetNode.type === "flatten"
+            )
+          );
+          if (!isFlattenConnected) {
+            nodeErrors.connection = `convulation/maxpooling layer must connect to a Flatten layer.`;
+          }
+        }
+
+        // Output Layer Activation Check
+        if (type === "output" && data.activation !== "Softmax") {
+          nodeErrors.activation =
+            "Output layer must use Softmax activation for MNIST dataset.";
+        }
+      }
+
+      // CIFAR-10 Dataset Specific Validations
+      if (dataset === "CIFAR-10") {
+        // Ensure no incompatible layers for CIFAR-10
+        if (type && ["dense"].includes(type)) {
+          nodeErrors.type = `Layer type '${type}' should not be used alone for CIFAR-10 dataset. Consider adding convolutional and max-pooling layers.`;
+        }
+
+        // Output Layer Activation Check
+        if (type === "output" && data.activation !== "Softmax") {
+          nodeErrors.activation =
+            "Output layer must use Softmax activation for CIFAR-10 dataset.";
+        }
+      }
+
+      // California Housing Dataset Specific Validations
+      if (dataset === "California Housing") {
+        // Ensure no incompatible layers for California Housing
+        if (type && ["convolution", "maxpooling", "flatten"].includes(type)) {
+          nodeErrors.type = `Layer type '${type}' is not compatible with the California Housing dataset.`;
+        }
+
+        // Output Layer Activation Check
+        if (type === "output" && data.activation !== "None") {
+          nodeErrors.activation =
+            "Output layer must have no activation (linear) for California Housing dataset.";
+        }
+      }
+
+      // Breast Cancer Dataset Specific Validations
+      if (dataset === "Breast Cancer") {
+        // Ensure no incompatible layers for Breast Cancer
+        if (type && ["convolution", "maxpooling", "flatten"].includes(type)) {
+          nodeErrors.type = `Layer type '${type}' is not compatible with the Breast Cancer dataset.`;
+        }
+
+        // Output Layer Activation Check
+        if (type === "output" && data.activation !== "Sigmoid") {
+          nodeErrors.activation =
+            "Output layer must use Sigmoid activation for Breast Cancer dataset.";
+        }
+      }
 
       if (Object.keys(nodeErrors).length > 0) {
         errors[node.id] = nodeErrors;
