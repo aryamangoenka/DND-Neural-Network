@@ -1,238 +1,274 @@
 .train-page {
-    display: grid;
-    grid-template-columns: 15% 70% 15%;
-    grid-template-rows: auto;
-    height: 100vh; /* Ensure it fills the full viewport height */
-    width: 100vw; /* Ensure it fills the full viewport width */
-    background-color: #f9f9f9;
-  
-    .left-sidebar,
-    .right-sidebar {
-      background-color: #1f2937;
-      padding: 1rem;
-      color: white;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      border-radius: 10px;
-      box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
-  
-      h2 {
-        margin-bottom: 1rem;
-        color: #4ade80;
-      }
-  
-      .config-section {
-        width: 100%;
-        margin-bottom: 6rem;
-  
-        label {
-          display: block;
-          margin-bottom: 0.5rem;
-          color: white;
-        }
-  
-        input,
-        select {
-          width: 100%;
-          padding: 0.5rem;
-          margin-bottom: 1rem;
-          border-radius: 5px;
-          border: none;
-          background-color: #4ade80;
-          color: #1f2937;
-        }
-      }
-    }
-  
-    .main-content {
-      background-color: #f3f4f6;
-      padding: 1rem;
-      border-radius: 10px;
-      display: flex;
-      flex-direction: column;
-      justify-content: justify-center; /* Spread content evenly */
-      height: 100%; /* Ensures it stretches to fill grid space */
-  
-      h2  {
-        margin-bottom: 1rem;
-        color: #4ade80;
-      }
-      h3  {
-        margin-bottom: 1rem;
-        color: #4ade80;
-      }
-  
-      .chart-section,
-      .log-section {
-        margin-top: 1rem;
-        background-color: #e5e7eb;
-        padding: 1rem;
-        border-radius: 8px;
-        text-align: center;
-        flex: 1; /* Make sections take up equal space */
-        
-      }
-    }
-  
-    .start-button {
-      background-color: #4ade80;
-      color: white;
-      padding: 0.7rem 1.5rem;
-      border: none;
-      border-radius: 5px;
-      font-size: 1.2rem;
-      font-weight: bold;
-      cursor: pointer;
-      transition: background-color 0.3s;
-  
-      &:hover {
-        background-color: #22c55e;
-      }
-  
-      &:disabled {
-        background-color: #6c757d;
-        cursor: not-allowed;
-      }
-    }
-    .stop-button {
-        background-color: #ef4444; /* Red for stop button */
-        color: white;
-        padding: 0.7rem 1.5rem;
-        border: none;
-        border-radius: 5px;
-        font-size: 1.2rem;
-        font-weight: bold;
-        cursor: pointer;
-        transition: background-color 0.3s;
-      
-        &:hover {
-          background-color: #dc2626; /* Darker red on hover */
-        }
-      
-        &:disabled {
-          background-color: #6c757d; /* Gray for disabled */
-          cursor: not-allowed;
-        }
-      }
-      
-      .button-container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 1rem; /* Adds space between Start and Stop buttons */
-        margin-top: 2rem; /* Centers the buttons vertically in the sidebar */
-      }
-      .progress-bar {
-        width: 100%;
-        background-color: #e0e0e0;
-        border-radius: 5px;
-        overflow: hidden;
-        margin: 10px 0;
-      }
-      
-      .progress-bar-fill {
-        height: 25px;
-        background-color: #4caf50;
-        text-align: center;
-        line-height: 25px;
-        color: white;
-        transition: width 0.3s ease-in-out;
-      }
-      .chart-section {
-        margin: 20px 0;
-      }
-      
-      .progress-bar {
-        width: 100%;
-        background-color: #e0e0e0;
-        border-radius: 5px;
-        overflow: hidden;
-        margin: 10px 0;
-      }
-      
-      .progress-bar-fill {
-        height: 25px;
-        background-color: #4caf50;
-        text-align: center;
-        line-height: 25px;
-        color: white;
-        transition: width 0.3s ease-in-out;
-      }
-      .charts-container {
-        display: flex; /* Arrange children in a row */
-        justify-content: space-between; /* Add space between graphs */
-        gap: 20px; /* Adjust gap between graphs */
-        margin-top: 20px; /* Add some spacing above the graphs */
-      }
-      
-      .chart-wrapper {
-        flex: 1; /* Ensure equal width for both charts */
-        max-width: 48%; /* Limit the width to fit side by side */
-        min-width: 300px; /* Ensure graphs don't shrink too much */
-      }
-      .confusion-matrix-container {
-        margin: 20px auto;
-        text-align: center;
-        width: 100%;
-        max-width: 600px;
-        overflow-x: auto;
-      }
-      
-      .confusion-matrix {
-        width: 100%;
-        border-collapse: collapse;
-        margin: 0 auto;
-        font-family: Arial, sans-serif;
-        text-align: center;
-      }
-      
-      .confusion-matrix th {
-        background-color: #4caf50; /* Green header background */
-        color: white;
-        font-weight: bold;
-        padding: 10px;
-      }
-      
-      .confusion-matrix td {
-        border: 1px solid #ddd;
-        padding: 10px;
-        font-size: 14px;
-        font-weight: bold;
-        position: relative;
-        color: #000; /* Default black text */
-      }
-      
-      /* Dynamic background gradient based on value */
-      .confusion-matrix td[data-value] {
-        background-color: rgba(76, 175, 80, calc(var(--value) / 100)); /* Green gradient */
-        color: white; /* Ensure text is visible on darker backgrounds */
-      }
-      
-      .confusion-matrix td[data-value="0"] {
-        background-color: #f9f9f9; /* Light gray for zero values */
-        color: #666; /* Dark gray for better readability */
-      }
-      
-      .confusion-matrix td[data-value]:hover {
-        background-color: #3e8e41; /* Dark green on hover */
-        color: white;
-      }
-      
-      .confusion-matrix tr:nth-child(even) td {
-        background-color: rgba(76, 175, 80, calc(var(--value) / 100)) !important; /* Consistent gradient for even rows */
-      }
-      
-      /* Header styling for first column */
-      .confusion-matrix th:first-child {
-        background-color: #e8f5e9; /* Light green */
-        color: #2e7d32; /* Dark green */
-      }
-      
-      
-      
-      
-      
+  display: grid;
+  grid-template-columns: 15% 70% 15%;
+  grid-template-rows: auto;
+  height: 100vh; /* Full viewport height */
+  width: 100vw; /* Full viewport width */
+  background-color: #f9f9f9;
 
+  .left-sidebar,
+  .right-sidebar {
+    background-color: #1f2937;
+    padding: 1rem;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border-radius: 10px;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+
+    h2 {
+      margin-bottom: 1rem;
+      color: #4ade80;
+    }
+
+    .config-section {
+      width: 100%;
+      margin-bottom: 6rem;
+
+      label {
+        display: block;
+        margin-bottom: 0.5rem;
+        color: white;
+      }
+
+      input,
+      select {
+        width: 100%;
+        padding: 0.5rem;
+        margin-bottom: 1rem;
+        border-radius: 5px;
+        border: none;
+        background-color: #4ade80;
+        color: #1f2937;
+      }
+    }
   }
-  
+
+  .main-content {
+    background-color: #f3f4f6;
+    padding: 1rem;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    height: 100%; /* Fill grid space */
+
+    h2 {
+      margin-bottom: 1rem;
+      color: #4ade80;
+    }
+
+    .dataset-visualizations {
+      margin-top: 20px;
+
+      h3 {
+        color: #4ade80;
+        margin-bottom: 10px;
+        text-align: center;
+      }
+
+      .chart-wrapper {
+        margin: 20px auto;
+        padding: 10px;
+        border-radius: 8px;
+        background-color: #f3f4f6;
+        box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+        width: 90%;
+        max-width: 700px;
+        min-width: 300px;
+
+        canvas {
+          max-height: 400px;
+        }
+      }
+
+      .charts-container {
+        display: flex; /* Align charts in a row */
+        justify-content: space-between;
+        gap: 20px; /* Space between charts */
+        margin-top: 20px;
+      
+        .chart-wrapper {
+          flex: 1; /* Ensure both charts take equal space */
+          max-width: 48%; /* Limit maximum width */
+          min-width: 300px; /* Minimum width to prevent shrinking */
+          padding: 10px;
+          border-radius: 8px;
+          background-color: #f3f4f6;
+          box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+      
+          canvas {
+            max-height: 400px; /* Limit chart height */
+          }
+        }
+      }
+
+      .regression-charts-container {
+        display: flex;
+        justify-content: space-between;
+        gap: 20px;
+        margin-top: 20px;
+
+        .chart-wrapper {
+          flex: 1;
+          max-width: 48%;
+          min-width: 300px;
+        }
+      }
+
+      .confusion-matrix-section {
+  margin-top: 20px;
+  text-align: center;
+
+  h3 {
+    color: #4ade80;
+    margin-bottom: 10px;
+  }
+
+  .confusion-matrix-container {
+    margin: 0 auto; /* Center the container */
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+    overflow: auto;
+    width: fit-content; /* Adjust to content width */
+
+    div {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #ccc;
+      font-size: 14px;
+      font-weight: 500;
+      color: #333;
+      background-color: #fff;
+
+      &:hover {
+        background-color: rgba(0, 123, 255, 0.1);
+        cursor: pointer;
+      }
+
+      &[style*="font-weight: bold"] {
+        background-color: #007bff;
+        color: #fff;
+      }
+    }
+  }
+}
+      @media (max-width: 768px) {
+        .chart-wrapper {
+          padding: 8px;
+          width: 100%;
+          max-width: 100%;
+        }
+
+        .charts-container {
+          flex-direction: column;
+          align-items: center;
+        }
+
+        .regression-charts-container {
+          flex-direction: column;
+          align-items: center;
+        }
+
+        h3 {
+          font-size: 1.2rem;
+        }
+      }
+    }
+  }
+
+  .start-button {
+    background-color: #4ade80;
+    color: white;
+    padding: 0.7rem 1.5rem;
+    border: none;
+    border-radius: 5px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s;
+
+    &:hover {
+      background-color: #22c55e;
+    }
+
+    &:disabled {
+      background-color: #6c757d;
+      cursor: not-allowed;
+    }
+  }
+
+  .button-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 2rem;
+  }
+
+  .progress-bar {
+    width: 100%;
+    background-color: #e0e0e0;
+    border-radius: 5px;
+    overflow: hidden;
+    margin: 10px 0;
+
+    .progress-bar-fill {
+      height: 25px;
+      background-color: #4caf50;
+      text-align: center;
+      line-height: 25px;
+      color: white;
+      transition: width 0.3s ease-in-out;
+    }
+  }
+
+  .confusion-matrix-container {
+    margin: 20px auto;
+    padding: 10px;
+    width: fit-content;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+    overflow: auto;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+
+    div {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #ccc;
+      font-size: 14px;
+      font-weight: 500;
+      color: #333;
+      background-color: #fff;
+
+      &:hover {
+        background-color: rgba(0, 123, 255, 0.1);
+        cursor: pointer;
+      }
+
+      &[style*="font-weight: bold"] {
+        background-color: #007bff;
+        color: #fff;
+        font-weight: bold;
+      }
+    }
+
+    @media (max-width: 768px) {
+      div {
+        font-size: 12px;
+        padding: 5px;
+      }
+
+      & {
+        width: 100%;
+        padding: 5px;
+      }
+    }
+  }
+}

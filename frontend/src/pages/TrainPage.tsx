@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { io, Socket } from "socket.io-client";
 import { Line } from "react-chartjs-2"; // Import Line chart from react-chartjs-2
+import { FixedSizeList } from "react-window"; // Import React-Window
+import { FixedSizeGrid } from "react-window"; // Import React-Window for grids
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -27,7 +29,7 @@ ChartJS.register(
 );
 
 const TrainPage = (): JSX.Element => {
-  const { dataset } = useDataset();
+  const dataset: string = useDataset()?.dataset || "Unknown";
   const {
     lossFunction,
     setLossFunction,
@@ -59,6 +61,9 @@ const TrainPage = (): JSX.Element => {
   );
   const [rmse, setRmse] = useState<number | null>(null);
   const [r2, setR2] = useState<number | null>(null);
+  const [predicted, setPredicted] = useState<number[]>([]); // Predicted values
+  const [actual, setActual] = useState<number[]>([]); // Actual values
+  const [residuals, setResiduals] = useState<number[]>([]); // Residual values
 
   const handleTrain = (): void => {
     if (!dataset) {
@@ -97,7 +102,6 @@ const TrainPage = (): JSX.Element => {
 
     // Emit 'start_training' event to the backend
     socketRef.current?.emit("start_training", payload);
-    socketRef.current?.connect();
   };
 
   useEffect(() => {
@@ -144,6 +148,24 @@ const TrainPage = (): JSX.Element => {
       setValAccuracyData((prev) => [...prev, data.val_accuracy]); // Append val_accuracy
       setLabels((prev) => [...prev, `Epoch ${data.epoch}`]); // Append epoch label
     });
+    // Listen for staged progress
+    socket.on("training_progress_stage", (data) => {
+      console.log("Staged training progress:", data);
+
+      // Emit a summary for the stage
+      setProgress(
+        (prev) =>
+          `${prev}\n[Stage Progress]: Completed up to Epoch ${
+            data.epoch
+          }. Stage Loss: ${data.loss.toFixed(
+            4
+          )}, Stage Accuracy: ${data.accuracy.toFixed(
+            4
+          )}, Validation Loss: ${data.val_loss.toFixed(
+            4
+          )}, Validation Accuracy: ${data.val_accuracy.toFixed(4)}`
+      );
+    });
 
     // Listen for training complete
     socket.on("training_complete", (data) => {
@@ -157,8 +179,17 @@ const TrainPage = (): JSX.Element => {
       } else {
         console.log("No Confusion Matrix in metrics");
       }
-      if (data.rmse) setRmse(data.rmse);
-      if (data.r2) setR2(data.r2);
+      if (data.metrics.rmse) setRmse(data.metrics.rmse);
+      if (data.metrics.r2) setR2(data.metrics.r2);
+
+      if (data.metrics.predicted_vs_actual) {
+        setPredicted(data.metrics.predicted_vs_actual.predicted);
+        setActual(data.metrics.predicted_vs_actual.actual);
+      }
+
+      if (data.metrics.residuals) {
+        setResiduals(data.metrics.residuals);
+      }
     });
 
     // Listen for training error
@@ -242,7 +273,7 @@ const TrainPage = (): JSX.Element => {
           "Frog",
           "Horse",
           "Ship",
-          "Truck"
+          "Truck",
         ];
       case "Breast Cancer":
         return ["Benign", "Malignant"];
@@ -250,44 +281,141 @@ const TrainPage = (): JSX.Element => {
         return [];
     }
   };
-  
-  const renderConfusionMatrix = (): JSX.Element | null => {
-    // Use a default value if `dataset` is null
-    const dataset: string = useDataset()?.dataset || "Unknown";
-  
-    const classLabels = getClassLabels(dataset);
-  
-    if (!confusionMatrix || confusionMatrix.length === 0) {
-      return <p>Confusion matrix is not available or invalid.</p>;
-    }
-  
+
+  const ConfusionMatrix = ({
+    matrix,
+    labels,
+  }: {
+    matrix: number[][];
+    labels: string[];
+  }) => {
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    // Dynamically calculate the dimensions
+    const [dimensions, setDimensions] = useState({ width: 800, height: 400 });
+
+    useEffect(() => {
+      const updateDimensions = () => {
+        if (containerRef.current) {
+          const { clientWidth, clientHeight } = containerRef.current;
+          setDimensions({
+            width: Math.min(clientWidth, 800), // Limit max width to 800px
+            height: Math.min(clientHeight, 400), // Limit max height to 400px
+          });
+        }
+      };
+
+      // Initial dimensions
+      updateDimensions();
+
+      // Update dimensions on resize
+      window.addEventListener("resize", updateDimensions);
+      return () => window.removeEventListener("resize", updateDimensions);
+    }, []);
+
+    const { width, height } = dimensions;
+
+    const columnWidth = width / (matrix[0].length + 1); // +1 for label column
+    const rowHeight = height / (matrix.length + 1); // +1 for label row
+
     return (
-      <div className="confusion-matrix-container">
-        <table className="confusion-matrix">
-          <thead>
-            <tr>
-              <th></th>
-              {classLabels.map((label, index) => (
-                <th key={index}>{label}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {confusionMatrix.map((row, rowIndex) => (
-              <tr key={rowIndex}>
-                <th>{classLabels[rowIndex]}</th>
-                {row.map((value, colIndex) => (
-                  <td key={colIndex}>{value}</td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div
+        className="confusion-matrix-container"
+        ref={containerRef}
+        style={{ width: "100%", height: "100%", overflow: "auto" }}
+      >
+        <FixedSizeGrid
+          columnCount={matrix[0].length + 1}
+          rowCount={matrix.length + 1}
+          columnWidth={columnWidth}
+          rowHeight={rowHeight}
+          height={height}
+          width={width}
+        >
+          {({ columnIndex, rowIndex, style }) => {
+            if (rowIndex === 0 && columnIndex === 0) {
+              // Top-left corner: Empty cell
+              return <div style={style}></div>;
+            }
+            if (rowIndex === 0) {
+              // Header row (column labels)
+              return (
+                <div
+                  style={{ ...style, fontWeight: "bold", textAlign: "center" }}
+                >
+                  {labels[columnIndex - 1]}
+                </div>
+              );
+            }
+            if (columnIndex === 0) {
+              // Header column (row labels)
+              return (
+                <div
+                  style={{ ...style, fontWeight: "bold", textAlign: "center" }}
+                >
+                  {labels[rowIndex - 1]}
+                </div>
+              );
+            }
+            // Matrix values
+            return (
+              <div style={{ ...style, textAlign: "center" }}>
+                {matrix[rowIndex - 1][columnIndex - 1]}
+              </div>
+            );
+          }}
+        </FixedSizeGrid>
       </div>
     );
   };
-  
-  
+
+  const LogViewer = ({ logs }: { logs: string[] }) => (
+    <FixedSizeList
+      height={200} // Set the height of the visible log area
+      itemCount={logs.length} // Total number of log entries
+      itemSize={25} // Height of each log entry
+      width={"100%"} // Full width of the container
+    >
+      {({ index, style }) => (
+        <div style={style}>
+          {logs[index]} {/* Render only the visible logs */}
+        </div>
+      )}
+    </FixedSizeList>
+  );
+  // Predicted vs. Actual Chart Data
+  const predictedVsActualChartData = {
+    labels: actual, // Use actual values as x-axis labels
+    datasets: [
+      {
+        label: "Predicted vs Actual",
+        data: predicted.map((pred, index) => ({
+          x: actual[index],
+          y: pred,
+        })), // Scatter points
+        borderColor: "rgba(75, 192, 192, 1)",
+        backgroundColor: "rgba(75, 192, 192, 0.2)",
+        showLine: false, // Scatter plot
+      },
+    ],
+  };
+
+  // Residuals Chart Data
+  const residualsChartData = {
+    labels: actual, // Use actual values as x-axis labels
+    datasets: [
+      {
+        label: "Residuals",
+        data: residuals.map((res, index) => ({
+          x: actual[index],
+          y: res,
+        })), // Scatter points
+        borderColor: "rgba(255, 159, 64, 1)",
+        backgroundColor: "rgba(255, 159, 64, 0.2)",
+        showLine: false, // Scatter plot
+      },
+    ],
+  };
 
   return (
     <div className="train-page">
@@ -369,58 +497,93 @@ const TrainPage = (): JSX.Element => {
         </div>
 
         <div className="charts-container">
-          {/* Loss Graph */}
-          <div className="chart-wrapper">
-            <h3>Loss Over Time</h3>
-            <Line data={lossChartData} options={chartOptions} />
-          </div>
+          {/* Visualizations for Non-Cali Datasets */}
+          {dataset !== "California Housing" && (
+            <div className="non-cali-visualizations">
+              {/* Loss and Accuracy Graphs */}
+              <div className="charts-container">
+                <div className="chart-wrapper">
+                  <h3>Loss Over Time</h3>
+                  <Line data={lossChartData} options={chartOptions} />
+                </div>
+                <div className="chart-wrapper">
+                  <h3>Accuracy Over Time</h3>
+                  <Line data={accuracyChartData} options={chartOptions} />
+                </div>
+              </div>
 
-          {/* Accuracy Graph */}
-          <div className="chart-wrapper">
-            <h3>Accuracy Over Time</h3>
-            <Line data={accuracyChartData} options={chartOptions} />
-          </div>
-        </div>
-        {/* Dataset-Specific Visualizations */}
-        <div className="dataset-visualizations">
-          <h3>Additional Metrics</h3>
-          {dataset &&
-            ["Iris", "MNIST", "CIFAR-10", "Breast Cancer"].includes(
-              dataset
-            ) && (
-              <div>
+              {/* Confusion Matrix */}
+              <div className="confusion-matrix-section">
                 <h3>Confusion Matrix</h3>
                 {confusionMatrix ? (
-                  <div className="confusion-matrix">
-                    {renderConfusionMatrix()}
-                  </div>
+                  <ConfusionMatrix
+                    matrix={confusionMatrix}
+                    labels={getClassLabels(dataset)}
+                  />
                 ) : (
                   <p>Confusion matrix is not available yet.</p>
                 )}
               </div>
-            )}
+            </div>
+          )}
+        </div>
 
+        {/* Dataset-Specific Visualizations */}
+        <div className="dataset-visualizations">
           {dataset === "California Housing" && (
-            <div>
-              <h3>Regression Metrics</h3>
-              <p>RMSE: {rmse?.toFixed(4) || "N/A"}</p>
-              <p>R²: {r2?.toFixed(4) || "N/A"}</p>
+            <div className="cali-visualizations">
+              {/* Loss Graph */}
+              <div className="chart-wrapper">
+                <h3>Loss Over Time</h3>
+                <Line data={lossChartData} options={chartOptions} />
+              </div>
+
+              {/* Predicted vs. Actual and Residuals Plots */}
+              <div className="charts-container">
+                <div className="chart-wrapper">
+                  <h4>Predicted vs Actual</h4>
+                  <Line
+                    data={predictedVsActualChartData}
+                    options={{
+                      responsive: true,
+                      plugins: {
+                        legend: { display: true },
+                        tooltip: { enabled: true },
+                      },
+                      scales: {
+                        x: { title: { display: true, text: "Actual Values" } },
+                        y: {
+                          title: { display: true, text: "Predicted Values" },
+                        },
+                      },
+                    }}
+                  />
+                </div>
+                <div className="chart-wrapper">
+                  <h4>Residuals</h4>
+                  <Line
+                    data={residualsChartData}
+                    options={{
+                      responsive: true,
+                      plugins: {
+                        legend: { display: true },
+                        tooltip: { enabled: true },
+                      },
+                      scales: {
+                        x: { title: { display: true, text: "Actual Values" } },
+                        y: { title: { display: true, text: "Residuals" } },
+                      },
+                    }}
+                  />
+                </div>
+              </div>
             </div>
           )}
         </div>
 
         <div className="log-section">
           <h3>Logs</h3>
-          <textarea
-            value={progress}
-            readOnly
-            style={{
-              width: "100%",
-              height: "200px",
-              resize: "none",
-              backgroundColor: "#f7f7f7",
-            }}
-          ></textarea>
+          <LogViewer logs={progress.split("\n")} />
         </div>
       </div>
 
@@ -434,16 +597,7 @@ const TrainPage = (): JSX.Element => {
           >
             {isTraining ? "Training..." : "Start Training"}
           </button>
-          <button
-            className="stop-button"
-            onClick={() => {
-              setIsTraining(false);
-              socketRef.current?.disconnect();
-            }}
-            disabled={!isTraining}
-          >
-            Stop Training
-          </button>
+
           <p>Batch Progress: {trainingProgress.toFixed(2)}%</p>
           <p>Loss: {liveMetrics.loss?.toFixed(6) || "N/A"}</p>
           <p>Accuracy: {liveMetrics.accuracy?.toFixed(6) || "N/A"}</p>

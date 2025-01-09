@@ -1,0 +1,73 @@
+/* General styles for all custom nodes */
+.custom-node {
+    padding: 10px;
+    border-radius: 8px;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+    color: #ffffff;
+  
+    h4 {
+      margin: 0 0 5px 0;
+      font-size: 16px;
+      font-weight: bold;
+    }
+  
+    p {
+      margin: 5px 0;
+      font-size: 12px;
+    }
+  }
+  
+  /* Styles for Dense Node */
+  .dense-node {
+    background-color: #4ade80;
+    border: 2px solid #2563eb;
+  }
+  
+  /* Styles for Convolution Node */
+  .convolution-node {
+    background-color: #3b82f6;
+    border: 2px solid #1d4ed8;
+  }
+  
+  /* Styles for Dropout Node */
+  .dropout-node {
+    background-color: #f59e0b;
+    border: 2px solid #d97706;
+  }
+  
+  /* Styles for Activation Node */
+  .activation-node {
+    background-color: #f43f5e;
+    border: 2px solid #e11d48;
+  }
+  
+  /* Styles for Batch Normalization Node */
+  .batch-normalization-node {
+    background-color: #a855f7;
+    border: 2px solid #7e22ce;
+  }
+  
+  /* Styles for Output Node */
+  .output-node {
+    background-color: #38bdf8;
+    border: 2px solid #0284c7;
+  }
+  
+  /* Responsive styles */
+  @media (max-width: 768px) {
+    .custom-node {
+      font-size: 12px;
+  
+      h4 {
+        font-size: 14px;
+      }
+  
+      p {
+        font-size: 10px;
+      }
+    }
+  }
+  
