@@ -10,15 +10,17 @@ from dataset_loader import load_dataset  # Import the load_dataset function
 from tensorflow.keras.callbacks import Callback
 from sklearn.metrics import confusion_matrix, mean_squared_error, r2_score
 import numpy as np
+import tensorflow as tf
 # Dictionary to track stop flags for each client
 stop_flags = {}
-
+tf.config.run_functions_eagerly(False)
 class RealTimeUpdateCallback(Callback):
     def __init__(self, socketio, client_id, total_epochs):
         self.socketio = socketio
         self.client_id = client_id
         self.total_epochs = total_epochs
 
+    
     def on_epoch_end(self, epoch, logs=None):
         """Emit training progress after each epoch."""
         if logs is not None:
@@ -130,6 +132,13 @@ def start_training(data):
         # Load and preprocess the dataset using load_dataset
         (x_train, y_train), (x_test, y_test) = load_dataset(dataset)
 
+
+
+        # Use tf.data.Dataset for efficient batching
+        batch_size = training_config["batchSize"]
+        train_dataset = tf.data.Dataset.from_tensor_slices((x_train, y_train)).batch(batch_size, drop_remainder=False)
+        val_dataset = tf.data.Dataset.from_tensor_slices((x_test, y_test)).batch(batch_size, drop_remainder=False)
+
         # Build the model
         model = build_model_from_architecture(model_architecture, x_train.shape[1:],dataset)
 
@@ -171,10 +180,8 @@ def start_training(data):
 
             # Train the model for the current stage
             history = model.fit(
-                x_train,
-                y_train,
-                validation_data=(x_test, y_test),
-                batch_size=training_config["batchSize"],
+                train_dataset,
+                validation_data=val_dataset,
                 epochs=stage_start + current_stage_size,
                 initial_epoch=stage_start,
                 verbose=0,  # Suppress built-in progress bar
@@ -204,8 +211,8 @@ def start_training(data):
             predictions = model.predict(x_test)
             if dataset == "Breast Cancer":
                 # Binary classification: Apply threshold for class prediction
-                y_pred = (predictions > 0.5).astype(int).flatten()  # Convert to 0 or 1
-                y_true = y_test.flatten()  # Ensure y_test is also flat
+                y_pred = (predictions > 0.5).astype(int) # Convert to 0 or 1
+                y_true = y_test  # Ensure y_test is also flat
             else:
                 # Multi-class classification
                 y_pred = np.argmax(predictions, axis=1)
@@ -215,19 +222,31 @@ def start_training(data):
             print(final_metrics)
 
         elif dataset == "California Housing":
-            predictions = model.predict(x_test).flatten()
-            residuals = (y_test - predictions).tolist()  # Calculate residuals
+            # Make predictions
+            predictions = model.predict(x_test)
 
-            # Add metrics for California Housing
-            rmse = np.sqrt(mean_squared_error(y_test, predictions))
-            r2 = r2_score(y_test, predictions)
+            # Ensure predictions and y_test are NumPy arrays
+            predictions = predictions if isinstance(predictions, np.ndarray) else predictions.numpy()
+            y_test = y_test if isinstance(y_test, np.ndarray) else y_test.numpy()
 
+            # Calculate residuals
+            residuals = (y_test - predictions).tolist()  # ✅ Removed .numpy()
+
+            # Compute Regression Metrics
+            rmse = np.sqrt(mean_squared_error(y_test, predictions))  # ✅ NumPy arrays used
+            r2 = r2_score(y_test, predictions)                      # ✅ NumPy arrays used
+
+            # Save metrics
             final_metrics["rmse"] = rmse
             final_metrics["r2"] = r2
+
+            # Save predicted vs actual for visualization
             final_metrics["predicted_vs_actual"] = {
-                "predicted": predictions.tolist(),  # Predicted values
-                "actual": y_test.tolist()  # Actual values
+                "predicted": predictions.tolist(),  # ✅ Removed redundant .numpy()
+                "actual": y_test.tolist()           # ✅ Removed redundant .numpy()
             }
+
+            # Save residuals
             final_metrics["residuals"] = residuals
 
 

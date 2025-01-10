@@ -1,6 +1,6 @@
 from tensorflow.keras.datasets import cifar10
 import numpy as np
-
+import tensorflow as tf
 def load_cifar10_dataset():
     """
     Load and preprocess the CIFAR-10 dataset.
@@ -13,6 +13,11 @@ def load_cifar10_dataset():
     x_test = x_test.astype("float32") / 255.0
     y_train = np.eye(10)[y_train.flatten()]  # One-hot encode labels
     y_test = np.eye(10)[y_test.flatten()]
+
+    x_train = tf.convert_to_tensor(x_train, dtype=tf.float32)
+    x_test = tf.convert_to_tensor(x_test, dtype=tf.float32)
+    y_train = tf.convert_to_tensor(y_train, dtype=tf.float32)
+    y_test = tf.convert_to_tensor(y_test, dtype=tf.float32)
     return (x_train, y_train), (x_test, y_test)
 
 

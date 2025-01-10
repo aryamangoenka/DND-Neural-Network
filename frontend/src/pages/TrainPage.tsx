@@ -45,7 +45,7 @@ const TrainPage = (): JSX.Element => {
     setEpochs,
     isTraining,
     setIsTraining,
-    
+
     setProgress,
     liveMetrics,
     setLiveMetrics,
@@ -92,13 +92,14 @@ const TrainPage = (): JSX.Element => {
     setR2(null);
 
     const payload = {
-      dataset,
-      lossFunction,
-      optimizer,
-      learningRate,
-      batchSize,
-      epochs,
+      dataset,                         // Assuming this is correct
+      lossFunction: lossFunction,      // Ensure this matches backend keys exactly
+      optimizer: optimizer.toLowerCase(), // Optimizer should be lowercase (e.g., "adam")
+      learningRate:parseFloat(learningRate.toString()), // Convert to float
+      batchSize:parseInt(batchSize.toString(),10),        // Convert to integer
+      epochs:parseInt(epochs.toString(),10),// Convert to integer
     };
+    
 
     console.log("Training payload sent:", payload);
 
@@ -144,11 +145,11 @@ const TrainPage = (): JSX.Element => {
       setLiveMetrics(data); // Update live metrics
 
       // Update graphs
-      setLossData((prev) => [...prev, data.loss]); // Append loss
-      setAccuracyData((prev) => [...prev, data.accuracy]); // Append accuracy
-      setValLossData((prev) => [...prev, data.val_loss]); // Append val_loss
-      setValAccuracyData((prev) => [...prev, data.val_accuracy]); // Append val_accuracy
-      setLabels((prev) => [...prev, `Epoch ${data.epoch}`]); // Append epoch label
+      setLossData((prev) => [...prev, parseFloat(data.loss)]); // Append loss
+      setAccuracyData((prev) => [...prev, parseFloat(data.accuracy)]); // Append accuracy
+      setValLossData((prev) => [...prev, parseFloat(data.val_loss)]); // Append val_loss
+      setValAccuracyData((prev) => [...prev, parseFloat(data.val_accuracy)]); // Append val_accuracy
+      setLabels((prev) => [...prev, `Epoch ${parseFloat(data.epoch)}`]); // Append epoch label
     });
     // Listen for staged progress
     socket.on("training_progress_stage", (data) => {
@@ -185,6 +186,7 @@ const TrainPage = (): JSX.Element => {
       if (data.metrics.r2) setR2(data.metrics.r2);
 
       if (data.metrics.predicted_vs_actual) {
+        console.log("Predicted vs Actual:", data.metrics.predicted_vs_actual);
         setPredicted(data.metrics.predicted_vs_actual.predicted);
         setActual(data.metrics.predicted_vs_actual.actual);
       }
@@ -421,7 +423,6 @@ const TrainPage = (): JSX.Element => {
     );
   };
 
-  
   // Predicted vs. Actual Chart Data
   const predictedVsActualChartData = {
     datasets: [
@@ -620,8 +621,6 @@ const TrainPage = (): JSX.Element => {
             </div>
           )}
         </div>
-
-        
       </div>
 
       <div className="right-sidebar">
@@ -638,6 +637,12 @@ const TrainPage = (): JSX.Element => {
           <p>Batch Progress: {trainingProgress.toFixed(2)}%</p>
           <p>Loss: {liveMetrics.loss?.toFixed(6) || "N/A"}</p>
           <p>Accuracy: {liveMetrics.accuracy?.toFixed(6) || "N/A"}</p>
+          {dataset === "California Housing" && (
+            <>
+              <p>RMSE: {rmse !== null ? rmse.toFixed(4) : "N/A"}</p>
+              <p>R² Score: {r2 !== null ? r2.toFixed(4) : "N/A"}</p>
+            </>
+          )}
         </div>
       </div>
     </div>

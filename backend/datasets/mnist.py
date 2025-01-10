@@ -1,6 +1,6 @@
 from tensorflow.keras.datasets import mnist
 import numpy as np
-
+import tensorflow as tf
 def load_mnist_dataset():
     """
     Load and preprocess the MNIST dataset.
@@ -13,6 +13,10 @@ def load_mnist_dataset():
     x_test = x_test.reshape(-1, 28, 28, 1).astype("float32") / 255.0
     y_train = np.eye(10)[y_train]  # One-hot encode labels
     y_test = np.eye(10)[y_test]
+    x_train = tf.convert_to_tensor(x_train, dtype=tf.float32)
+    x_test = tf.convert_to_tensor(x_test, dtype=tf.float32)
+    y_train = tf.convert_to_tensor(y_train, dtype=tf.float32)
+    y_test = tf.convert_to_tensor(y_test, dtype=tf.float32)
     return (x_train, y_train), (x_test, y_test)
 
 
