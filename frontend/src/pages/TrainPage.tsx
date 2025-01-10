@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { io, Socket } from "socket.io-client";
 import { Line } from "react-chartjs-2"; // Import Line chart from react-chartjs-2
-import { FixedSizeList } from "react-window"; // Import React-Window
+
 import { FixedSizeGrid } from "react-window"; // Import React-Window for grids
 import {
   Chart as ChartJS,
@@ -12,6 +12,7 @@ import {
   Title,
   Tooltip,
   Legend,
+  Filler,
 } from "chart.js"; // Import Chart.js core components
 import "../styles/components/TrainPage.scss";
 import { useDataset } from "../context/DatasetContext";
@@ -25,7 +26,8 @@ ChartJS.register(
   LineElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  Filler
 );
 
 const TrainPage = (): JSX.Element => {
@@ -43,7 +45,7 @@ const TrainPage = (): JSX.Element => {
     setEpochs,
     isTraining,
     setIsTraining,
-    progress,
+    
     setProgress,
     liveMetrics,
     setLiveMetrics,
@@ -291,38 +293,57 @@ const TrainPage = (): JSX.Element => {
   }) => {
     const containerRef = useRef<HTMLDivElement>(null);
 
-    // Dynamically calculate the dimensions
-    const [dimensions, setDimensions] = useState({ width: 800, height: 400 });
+    // Dynamically calculate dimensions based on dataset size
+    const [dimensions, setDimensions] = useState({ width: 500, height: 500 });
 
     useEffect(() => {
       const updateDimensions = () => {
         if (containerRef.current) {
           const { clientWidth, clientHeight } = containerRef.current;
+
+          // Adjust size dynamically for datasets with many classes (e.g., CIFAR-10, MNIST)
+          const dynamicSize = Math.max(400, labels.length * 70);
+
           setDimensions({
-            width: Math.min(clientWidth, 800), // Limit max width to 800px
-            height: Math.min(clientHeight, 400), // Limit max height to 400px
+            width: Math.min(clientWidth, dynamicSize),
+            height: Math.min(clientHeight, dynamicSize),
           });
         }
       };
 
-      // Initial dimensions
       updateDimensions();
-
-      // Update dimensions on resize
       window.addEventListener("resize", updateDimensions);
       return () => window.removeEventListener("resize", updateDimensions);
-    }, []);
+    }, [labels.length]);
 
     const { width, height } = dimensions;
 
     const columnWidth = width / (matrix[0].length + 1); // +1 for label column
     const rowHeight = height / (matrix.length + 1); // +1 for label row
 
+    // Determine background color intensity based on value
+    const getCellColor = (value: number, maxValue: number) => {
+      const opacity = maxValue > 0 ? value / maxValue : 0;
+      return `rgba(76, 175, 80, ${opacity})`; // Green color gradient
+    };
+
+    const maxValue = Math.max(...matrix.flat());
+
     return (
       <div
         className="confusion-matrix-container"
         ref={containerRef}
-        style={{ width: "100%", height: "100%", overflow: "auto" }}
+        style={{
+          width: "100%",
+          maxWidth: "800px",
+          margin: "20px auto",
+          overflow: "auto",
+          padding: "10px",
+          backgroundColor: "#ffffff",
+          border: "2px solid #ccc",
+          borderRadius: "10px",
+          boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.2)",
+        }}
       >
         <FixedSizeGrid
           columnCount={matrix[0].length + 1}
@@ -334,33 +355,64 @@ const TrainPage = (): JSX.Element => {
         >
           {({ columnIndex, rowIndex, style }) => {
             if (rowIndex === 0 && columnIndex === 0) {
-              // Top-left corner: Empty cell
-              return <div style={style}></div>;
+              return <div style={style}></div>; // Top-left corner
             }
+
             if (rowIndex === 0) {
-              // Header row (column labels)
+              // Column headers
               return (
                 <div
-                  style={{ ...style, fontWeight: "bold", textAlign: "center" }}
+                  style={{
+                    ...style,
+                    fontWeight: "bold",
+                    textAlign: "center",
+                    backgroundColor: "#4ade80",
+                    color: "#ffffff",
+                    border: "1px solid #ddd",
+                  }}
                 >
                   {labels[columnIndex - 1]}
                 </div>
               );
             }
+
             if (columnIndex === 0) {
-              // Header column (row labels)
+              // Row headers
               return (
                 <div
-                  style={{ ...style, fontWeight: "bold", textAlign: "center" }}
+                  style={{
+                    ...style,
+                    fontWeight: "bold",
+                    textAlign: "center",
+                    backgroundColor: "#4ade80",
+                    color: "#ffffff",
+                    border: "1px solid #ddd",
+                    padding: "10px",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
                 >
                   {labels[rowIndex - 1]}
                 </div>
               );
             }
-            // Matrix values
+
+            // Data cells with dynamic color scaling
+            const value = matrix[rowIndex - 1][columnIndex - 1];
+
             return (
-              <div style={{ ...style, textAlign: "center" }}>
-                {matrix[rowIndex - 1][columnIndex - 1]}
+              <div
+                style={{
+                  ...style,
+                  textAlign: "center",
+                  fontWeight: "bold",
+                  color: value > 0.5 * maxValue ? "#fff" : "#333",
+                  backgroundColor: getCellColor(value, maxValue),
+                  border: "1px solid #ddd",
+                }}
+              >
+                {value}
               </div>
             );
           }}
@@ -369,50 +421,38 @@ const TrainPage = (): JSX.Element => {
     );
   };
 
-  const LogViewer = ({ logs }: { logs: string[] }) => (
-    <FixedSizeList
-      height={200} // Set the height of the visible log area
-      itemCount={logs.length} // Total number of log entries
-      itemSize={25} // Height of each log entry
-      width={"100%"} // Full width of the container
-    >
-      {({ index, style }) => (
-        <div style={style}>
-          {logs[index]} {/* Render only the visible logs */}
-        </div>
-      )}
-    </FixedSizeList>
-  );
+  
   // Predicted vs. Actual Chart Data
   const predictedVsActualChartData = {
-    labels: actual, // Use actual values as x-axis labels
     datasets: [
       {
         label: "Predicted vs Actual",
-        data: predicted.map((pred, index) => ({
-          x: actual[index],
-          y: pred,
-        })), // Scatter points
+        data: actual.map((value, index) => ({
+          x: value, // Correct X-axis with actual values
+          y: predicted[index], // Correct Y-axis with predicted values
+        })),
         borderColor: "rgba(75, 192, 192, 1)",
         backgroundColor: "rgba(75, 192, 192, 0.2)",
-        showLine: false, // Scatter plot
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        showLine: false, // Keep it as a scatter plot
       },
     ],
   };
 
-  // Residuals Chart Data
   const residualsChartData = {
-    labels: actual, // Use actual values as x-axis labels
     datasets: [
       {
         label: "Residuals",
-        data: residuals.map((res, index) => ({
-          x: actual[index],
-          y: res,
-        })), // Scatter points
+        data: actual.map((value, index) => ({
+          x: value, // Actual value on X-axis
+          y: residuals[index], // Residual value on Y-axis
+        })),
         borderColor: "rgba(255, 159, 64, 1)",
         backgroundColor: "rgba(255, 159, 64, 0.2)",
-        showLine: false, // Scatter plot
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        showLine: false, // Keep it as a scatter plot
       },
     ],
   };
@@ -501,29 +541,29 @@ const TrainPage = (): JSX.Element => {
           {dataset !== "California Housing" && (
             <div className="non-cali-visualizations">
               {/* Loss and Accuracy Graphs */}
-              <div className="charts-container">
-                <div className="chart-wrapper">
+              {/* Loss and Accuracy Graphs */}
+              <div className="charts-row">
+                <div className="chart-small">
                   <h3>Loss Over Time</h3>
                   <Line data={lossChartData} options={chartOptions} />
                 </div>
-                <div className="chart-wrapper">
+                <div className="chart-small">
                   <h3>Accuracy Over Time</h3>
                   <Line data={accuracyChartData} options={chartOptions} />
                 </div>
               </div>
 
               {/* Confusion Matrix */}
-              <div className="confusion-matrix-section">
-                <h3>Confusion Matrix</h3>
-                {confusionMatrix ? (
-                  <ConfusionMatrix
-                    matrix={confusionMatrix}
-                    labels={getClassLabels(dataset)}
-                  />
-                ) : (
-                  <p>Confusion matrix is not available yet.</p>
-                )}
-              </div>
+
+              <h3>Confusion Matrix</h3>
+              {confusionMatrix ? (
+                <ConfusionMatrix
+                  matrix={confusionMatrix}
+                  labels={getClassLabels(dataset)}
+                />
+              ) : (
+                <p>Confusion matrix is not available yet.</p>
+              )}
             </div>
           )}
         </div>
@@ -532,14 +572,14 @@ const TrainPage = (): JSX.Element => {
         <div className="dataset-visualizations">
           {dataset === "California Housing" && (
             <div className="cali-visualizations">
-              {/* Loss Graph */}
-              <div className="chart-wrapper">
+              {/* Smaller Loss Graph on Top */}
+              <div className="loss-chart-wrapper">
                 <h3>Loss Over Time</h3>
                 <Line data={lossChartData} options={chartOptions} />
               </div>
 
-              {/* Predicted vs. Actual and Residuals Plots */}
-              <div className="charts-container">
+              {/* Predicted vs. Actual and Residuals Plots Side by Side */}
+              <div className="regression-charts-container">
                 <div className="chart-wrapper">
                   <h4>Predicted vs Actual</h4>
                   <Line
@@ -581,10 +621,7 @@ const TrainPage = (): JSX.Element => {
           )}
         </div>
 
-        <div className="log-section">
-          <h3>Logs</h3>
-          <LogViewer logs={progress.split("\n")} />
-        </div>
+        
       </div>
 
       <div className="right-sidebar">

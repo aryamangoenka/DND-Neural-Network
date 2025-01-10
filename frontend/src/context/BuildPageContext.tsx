@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { Node, Edge } from "reactflow";
-
 // Define the structure of data for each Node
 interface NodeData {
   label: string;
@@ -9,6 +8,7 @@ interface NodeData {
 
 // Define the structure of validation errors
 type ValidationErrors = Record<string, Record<string, string>>;
+
 
 
 

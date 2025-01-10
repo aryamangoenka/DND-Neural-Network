@@ -1,73 +1,114 @@
-/* General styles for all custom nodes */
+/* Base styling for all custom nodes */
 .custom-node {
-    padding: 10px;
-    border-radius: 8px;
-    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
-    text-align: center;
-    font-family: Arial, sans-serif;
-    font-size: 14px;
-    color: #ffffff;
-  
-    h4 {
-      margin: 0 0 5px 0;
-      font-size: 16px;
-      font-weight: bold;
-    }
-  
-    p {
-      margin: 5px 0;
-      font-size: 12px;
-    }
+  width: 160px;
+  padding: 10px;
+  border-radius: 8px;
+  color: #fff;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 0.9rem;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s ease-in-out;
+  border: 2px solid transparent;
+
+  &:hover {
+    transform: scale(1.05);
+    cursor: grab;
   }
-  
-  /* Styles for Dense Node */
-  .dense-node {
-    background-color: #4ade80;
-    border: 2px solid #2563eb;
+
+  h4 {
+    margin-bottom: 5px;
+    font-size: 1rem;
   }
-  
-  /* Styles for Convolution Node */
-  .convolution-node {
-    background-color: #3b82f6;
-    border: 2px solid #1d4ed8;
+
+  p {
+    margin: 2px 0;
+    font-size: 0.8rem;
   }
-  
-  /* Styles for Dropout Node */
-  .dropout-node {
-    background-color: #f59e0b;
-    border: 2px solid #d97706;
+}
+
+/* Dense Layer Node */
+.dense-node {
+  background-color: #4CAF50; // Green
+  border-color: #388E3C;
+}
+
+/* Convolution Layer Node */
+.convolution-node {
+  background-color: #2196F3; // Blue
+  border-color: #1976D2;
+}
+
+/* MaxPooling Layer Node */
+.maxpooling-node {
+  background-color: #9C27B0; // Purple
+  border-color: #7B1FA2;
+}
+
+/* Flatten Layer Node */
+.flatten-node {
+  background-color: #FF9800; // Orange
+  border-color: #F57C00;
+}
+
+/* Dropout Layer Node */
+.dropout-node {
+  background-color: #F44336; // Red
+  border-color: #D32F2F;
+}
+
+/* Batch Normalization Node */
+.batchnormalization-node {
+  background-color: #188cc6; // Gray-Blue
+  border-color: #455A64;
+}
+
+/* Handle styling for input/output connections */
+.react-flow__handle {
+  width: 10px;
+  height: 10px;
+  background-color: #fff;
+  border: 2px solid #333;
+  border-radius: 50%;
+}
+
+.react-flow__handle-left {
+  left: -5px;
+}
+
+.react-flow__handle-right {
+  right: -5px;
+}
+/* Input Node */
+.input-node {
+  background-color: #00BCD4; // Cyan
+  border-color: #0097A7;
+  color: #fff;
+  padding: 10px;
+  border-radius: 8px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s ease-in-out;
+
+  &:hover {
+    transform: scale(1.05);
+    cursor: grab;
   }
-  
-  /* Styles for Activation Node */
-  .activation-node {
-    background-color: #f43f5e;
-    border: 2px solid #e11d48;
+}
+
+/* Output Node */
+.output-node {
+  background-color: #FF5722; // Deep Orange
+  border-color: #E64A19;
+  color: #fff;
+  padding: 10px;
+  border-radius: 8px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s ease-in-out;
+
+  &:hover {
+    transform: scale(1.05);
+    cursor: grab;
   }
-  
-  /* Styles for Batch Normalization Node */
-  .batch-normalization-node {
-    background-color: #a855f7;
-    border: 2px solid #7e22ce;
-  }
-  
-  /* Styles for Output Node */
-  .output-node {
-    background-color: #38bdf8;
-    border: 2px solid #0284c7;
-  }
-  
-  /* Responsive styles */
-  @media (max-width: 768px) {
-    .custom-node {
-      font-size: 12px;
-  
-      h4 {
-        font-size: 14px;
-      }
-  
-      p {
-        font-size: 10px;
-      }
-    }
-  }
-  
+}

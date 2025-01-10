@@ -35,7 +35,7 @@ class RealTimeUpdateCallback(Callback):
 
 app = Flask(__name__)
 CORS(app)
-socketio = SocketIO(app, cors_allowed_origins="*")
+socketio = SocketIO(app, cors_allowed_origins="*", ping_timeout=300, ping_interval=25)
 app.config["SECRET_KEY"] = "your-secret-key"
 
 MODEL_ARCHITECTURE_FILE = "saved_model.json"
@@ -202,8 +202,14 @@ def start_training(data):
         # Additional metrics for classification datasets
         if dataset in ["Iris", "MNIST", "CIFAR-10", "Breast Cancer"]:
             predictions = model.predict(x_test)
-            y_pred = np.argmax(predictions, axis=1)
-            y_true = np.argmax(y_test, axis=1)
+            if dataset == "Breast Cancer":
+                # Binary classification: Apply threshold for class prediction
+                y_pred = (predictions > 0.5).astype(int).flatten()  # Convert to 0 or 1
+                y_true = y_test.flatten()  # Ensure y_test is also flat
+            else:
+                # Multi-class classification
+                y_pred = np.argmax(predictions, axis=1)
+                y_true = np.argmax(y_test, axis=1)
             conf_matrix = confusion_matrix(y_true, y_pred).tolist()  # Convert to list for JSON serialization
             final_metrics["confusion_matrix"] = conf_matrix
             print(final_metrics)

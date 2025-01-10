@@ -16,7 +16,27 @@ import "reactflow/dist/style.css";
 import "../styles/components/BuildPage.scss";
 import { useBuildPageContext } from "../context/BuildPageContext";
 import { useDataset } from "../context/DatasetContext";
+import {
+  DenseNode,
+  ConvolutionNode,
+  MaxPoolingNode,
+  FlattenNode,
+  DropoutNode,
+  BatchNormalizationNode,
+  InputNode,
+  OutputNode
+} from "../components/CustomNodes";
 
+const nodeTypes = {
+  input: InputNode,
+  output: OutputNode,
+  dense: DenseNode,
+  convolution: ConvolutionNode,
+  maxpooling: MaxPoolingNode,
+  flatten: FlattenNode,
+  dropout: DropoutNode,
+  batchnormalization: BatchNormalizationNode,
+};
 
 const BuildPage = (): JSX.Element => {
   const {
@@ -364,22 +384,17 @@ const BuildPage = (): JSX.Element => {
         const hasConvolutionLayer = nodes.some(
           (node) => node.type === "convolution"
         );
-        
-        if (
-          type &&
-          ["dense"].includes(type) &&
-          !hasConvolutionLayer
 
-        ) {
+        if (type && ["dense"].includes(type) && !hasConvolutionLayer) {
           nodeErrors.type = `Layer type '${type}' should not be used alone for MNIST dataset. Add a convolutional.`;
         }
-
 
         // Ensure MaxPooling and Convolution layers are followed by valid layers
         if (type === "convolution" || type === "maxpooling") {
           const isFlattenConnected = edges.some((edge) =>
             nodes.some(
-              (targetNode) => edge.source === node.id && targetNode.type === "flatten"
+              (targetNode) =>
+                edge.source === node.id && targetNode.type === "flatten"
             )
           );
           if (!isFlattenConnected) {
@@ -393,8 +408,6 @@ const BuildPage = (): JSX.Element => {
             "Output layer must use Softmax activation for MNIST dataset.";
         }
       }
-
-      
 
       // California Housing Dataset Specific Validations
       if (dataset === "California Housing") {
@@ -507,7 +520,7 @@ const BuildPage = (): JSX.Element => {
           "MaxPooling",
           "Flatten",
           "Dropout",
-          "Batch\nNormalization",
+          "BatchNormalization",
         ].map((type) => (
           <div key={type} className="layer-card">
             <span>{type}</span>
@@ -529,6 +542,7 @@ const BuildPage = (): JSX.Element => {
           onConnect={onConnect}
           onNodeClick={(_, node) => setSelectedNode(node)}
           fitView
+          nodeTypes={nodeTypes} // Registered here
         >
           <Background />
           <Controls />
@@ -824,6 +838,33 @@ const BuildPage = (): JSX.Element => {
                     <option value="valid">Valid</option>
                     <option value="same">Same</option>
                   </select>
+                </>
+              )}
+              {/* Batch Normalization Layer */}
+              {selectedNode.type === "batchnormalization" && (
+                <>
+                  <label>Momentum:</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    value={selectedNode.data.momentum || 0.99}
+                    onChange={(e) =>
+                      updateParameter("momentum", parseFloat(e.target.value))
+                    }
+                  />
+
+                  <label>Epsilon:</label>
+                  <input
+                    type="number"
+                    min="0.00001"
+                    step="0.00001"
+                    value={selectedNode.data.epsilon || 0.001}
+                    onChange={(e) =>
+                      updateParameter("epsilon", parseFloat(e.target.value))
+                    }
+                  />
                 </>
               )}
             </>
