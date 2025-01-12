@@ -66,6 +66,7 @@ const TrainPage = (): JSX.Element => {
   const [predicted, setPredicted] = useState<number[]>([]); // Predicted values
   const [actual, setActual] = useState<number[]>([]); // Actual values
   const [residuals, setResiduals] = useState<number[]>([]); // Residual values
+  const [predictedValues, setPredictedValues] = useState<number[]>([]); // Residual values
 
   const handleTrain = (): void => {
     if (!dataset) {
@@ -77,7 +78,13 @@ const TrainPage = (): JSX.Element => {
     setIsTraining(true);
     setTrainingProgress(0); // Reset progress bar
     setLossData([]); // Clear previous loss data
-    setAccuracyData([]); // Clear previous accuracy data
+    setValAccuracyData([]); // Clear previous accuracy data
+    setValLossData([]); // Clear previous val loss data
+    setAccuracyData([]); // Clear previous val accuracy data
+    setPredicted([]);
+    setActual([]);
+    setPredictedValues([]);
+    setResiduals([]);
     setLabels([]); // Clear epoch labels
     setProgress(""); // Clear logs
     setLiveMetrics({
@@ -151,24 +158,7 @@ const TrainPage = (): JSX.Element => {
       setValAccuracyData((prev) => [...prev, parseFloat(data.val_accuracy)]); // Append val_accuracy
       setLabels((prev) => [...prev, `Epoch ${parseFloat(data.epoch)}`]); // Append epoch label
     });
-    // Listen for staged progress
-    socket.on("training_progress_stage", (data) => {
-      console.log("Staged training progress:", data);
 
-      // Emit a summary for the stage
-      setProgress(
-        (prev) =>
-          `${prev}\n[Stage Progress]: Completed up to Epoch ${
-            data.epoch
-          }. Stage Loss: ${data.loss.toFixed(
-            4
-          )}, Stage Accuracy: ${data.accuracy.toFixed(
-            4
-          )}, Validation Loss: ${data.val_loss.toFixed(
-            4
-          )}, Validation Accuracy: ${data.val_accuracy.toFixed(4)}`
-      );
-    });
 
     // Listen for training complete
     socket.on("training_complete", (data) => {
@@ -191,8 +181,10 @@ const TrainPage = (): JSX.Element => {
         setActual(data.metrics.predicted_vs_actual.actual);
       }
 
-      if (data.metrics.residuals) {
-        setResiduals(data.metrics.residuals);
+      if (data.metrics.residuals_plot) {
+        console.log(data.metrics.residuals_plot)
+        setResiduals(data.metrics.residuals_plot.residuals);
+        setPredictedValues(data.metrics.residuals_plot.predictedValues)
       }
     });
 
@@ -445,7 +437,7 @@ const TrainPage = (): JSX.Element => {
     datasets: [
       {
         label: "Residuals",
-        data: actual.map((value, index) => ({
+        data: predictedValues.map((value, index) => ({
           x: value, // Actual value on X-axis
           y: residuals[index], // Residual value on Y-axis
         })),
@@ -611,7 +603,7 @@ const TrainPage = (): JSX.Element => {
                         tooltip: { enabled: true },
                       },
                       scales: {
-                        x: { title: { display: true, text: "Actual Values" } },
+                        x: { title: { display: true, text: "Predicted Values" } },
                         y: { title: { display: true, text: "Residuals" } },
                       },
                     }}

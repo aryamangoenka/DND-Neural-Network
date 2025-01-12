@@ -11,6 +11,8 @@ from tensorflow.keras.callbacks import Callback
 from sklearn.metrics import confusion_matrix, mean_squared_error, r2_score
 import numpy as np
 import tensorflow as tf
+from tensorflow.keras.backend import clear_session
+
 # Dictionary to track stop flags for each client
 stop_flags = {}
 tf.config.run_functions_eagerly(False)
@@ -139,6 +141,9 @@ def start_training(data):
         train_dataset = tf.data.Dataset.from_tensor_slices((x_train, y_train)).batch(batch_size, drop_remainder=False)
         val_dataset = tf.data.Dataset.from_tensor_slices((x_test, y_test)).batch(batch_size, drop_remainder=False)
 
+        # Clear previous TensorFlow session to reset the model
+        clear_session()
+
         # Build the model
         model = build_model_from_architecture(model_architecture, x_train.shape[1:],dataset)
 
@@ -219,7 +224,7 @@ def start_training(data):
                 y_true = np.argmax(y_test, axis=1)
             conf_matrix = confusion_matrix(y_true, y_pred).tolist()  # Convert to list for JSON serialization
             final_metrics["confusion_matrix"] = conf_matrix
-            print(final_metrics)
+            
 
         elif dataset == "California Housing":
             # Make predictions
@@ -246,12 +251,16 @@ def start_training(data):
                 "actual": y_test.tolist()           # ✅ Removed redundant .numpy()
             }
 
-            # Save residuals
-            final_metrics["residuals"] = residuals
-
+            # Save residuals plot data (Predicted vs Residuals)
+            final_metrics["residuals_plot"] = {
+                "predictedValues": predictions.tolist(),  # ✅ Predicted on X-axis
+                "residuals": residuals              # ✅ Residuals on Y-axis
+            }
+            #print(final_metrics["predicted_vs_actual"])
+            print(final_metrics["predicted_vs_actual"]["predicted"])
 
         # Emit final training results
-        print("Payload emitted to frontend:", {"message": "Training completed successfully!", "metrics": final_metrics})
+        #print("Payload emitted to frontend:", {"message": "Training completed successfully!", "metrics": final_metrics})
 
         emit("training_complete", {
             "message": "Training completed successfully!",

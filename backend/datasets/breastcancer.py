@@ -19,13 +19,13 @@ def load_breast_cancer_dataset():
 
     # Split dataset into training and testing sets
     x_train, x_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42
+        X, y, test_size=0.2, random_state=42,stratify=y
     )
 
     x_train = tf.convert_to_tensor(x_train, dtype=tf.float32)
     x_test = tf.convert_to_tensor(x_test, dtype=tf.float32)
-    y_train = tf.convert_to_tensor(y_train, dtype=tf.float32)
-    y_test = tf.convert_to_tensor(y_test, dtype=tf.float32)
+    y_train = tf.convert_to_tensor(y_train.reshape(-1,1), dtype=tf.float32)
+    y_test = tf.convert_to_tensor(y_test.reshape(-1,1), dtype=tf.float32)
     return (x_train, y_train), (x_test, y_test)
 
 if __name__ == "__main__":
