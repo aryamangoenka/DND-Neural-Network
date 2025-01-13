@@ -12,10 +12,22 @@ from sklearn.metrics import confusion_matrix, mean_squared_error, r2_score
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.backend import clear_session
+import shutil
+import time
+
+
 
 # Dictionary to track stop flags for each client
 stop_flags = {}
 tf.config.run_functions_eagerly(False)
+# 📂 Path to store the trained model
+EXPORT_FOLDER = "exports"
+os.makedirs(EXPORT_FOLDER, exist_ok=True)  # Ensure the folder exists
+TRAINED_MODEL_PATH = os.path.join(EXPORT_FOLDER, "trained_model.keras")
+# Store the latest training configuration globally
+latest_training_config = {}
+x_train_shape=()
+
 class RealTimeUpdateCallback(Callback):
     def __init__(self, socketio, client_id, total_epochs):
         self.socketio = socketio
@@ -94,6 +106,8 @@ def handle_disconnect():
 
 @socketio.on("start_training")
 def start_training(data):
+    global latest_training_config
+    global x_train_shape
     """
     Handle the WebSocket event to start training and send real-time updates.
     """
@@ -124,7 +138,7 @@ def start_training(data):
 
         training_config = data  # Training config comes from WebSocket payload
         print(training_config)
-
+        latest_training_config = data
         # Map loss function
         loss_function = LOSS_FUNCTION_MAPPING.get(training_config["lossFunction"])
         if not loss_function:
@@ -146,7 +160,7 @@ def start_training(data):
 
         # Build the model
         model = build_model_from_architecture(model_architecture, x_train.shape[1:],dataset)
-
+        x_train_shape=x_train.shape[1:]
         # Compile the model
         model.compile(
             optimizer=training_config["optimizer"].lower(),
@@ -261,14 +275,14 @@ def start_training(data):
 
         # Emit final training results
         #print("Payload emitted to frontend:", {"message": "Training completed successfully!", "metrics": final_metrics})
-
+        
         emit("training_complete", {
             "message": "Training completed successfully!",
             "metrics": final_metrics,
             "loss_over_time": history.history["loss"],
             "val_loss_over_time": history.history.get("val_loss", [])
         })
-    
+        model.save(TRAINED_MODEL_PATH)
     except Exception as e:
         emit("training_error", {"error": str(e)})
 
@@ -370,8 +384,8 @@ def determine_output_units(dataset_name):
 
 # Existing imports and app setup remain unchanged...
 
-EXPORT_FOLDER = "exports"
-os.makedirs(EXPORT_FOLDER, exist_ok=True)  # Ensure the folder exists
+
+
 
 @app.route("/export/<format>", methods=["GET"])
 def export_model(format):
@@ -380,31 +394,45 @@ def export_model(format):
     Supported formats: py, ipynb, savedmodel, hdf5
     """
     try:
-        # Load the trained model (assuming it's saved in memory or disk)
-        model_path = "trained_model.h5"  # Assuming the model is saved here for simplicity
-        model = tf.keras.models.load_model(model_path)
+# ✅ Load the latest trained model, not the dummy one
+        if not os.path.exists(TRAINED_MODEL_PATH):
+            return jsonify({"error": "No trained model found. Please train the model first."}), 400
+
+        model = tf.keras.models.load_model(TRAINED_MODEL_PATH,compile=False)
 
         # Export according to the requested format
         if format == "py":
             file_path = os.path.join(EXPORT_FOLDER, "trained_model.py")
             with open(file_path, "w") as f:
-                f.write(generate_python_script())
+                f.write(generate_python_script(model, latest_training_config,x_train_shape))
             return send_file(file_path, as_attachment=True)
 
         elif format == "ipynb":
             file_path = os.path.join(EXPORT_FOLDER, "trained_model.ipynb")
             with open(file_path, "w") as f:
-                f.write(generate_notebook())
+                f.write(generate_notebook(model, latest_training_config,x_train_shape))
             return send_file(file_path, as_attachment=True)
 
         elif format == "savedmodel":
-            saved_model_dir = os.path.join(EXPORT_FOLDER, "saved_model")
-            model.save(saved_model_dir, save_format="tf")
-            return jsonify({"message": "Model exported as TensorFlow SavedModel."})
+            # ✅ Save the model in TensorFlow 2 SavedModel format
+            saved_model_dir = os.path.join(EXPORT_FOLDER, "saved_model_tf2")
+            
+            # ✅ Use export for TF2 SavedModel
+            model.export(saved_model_dir)
 
-        elif format == "hdf5":
-            file_path = os.path.join(EXPORT_FOLDER, "trained_model.h5")
-            model.save(file_path, save_format="h5")
+            # 🔥 Zip the SavedModel directory
+            zip_path = shutil.make_archive(saved_model_dir, 'zip', saved_model_dir)
+
+            # 📤 Send the zipped SavedModel
+            return send_file(
+                f"{saved_model_dir}.zip",
+                as_attachment=True,
+                mimetype='application/zip'
+            )
+
+        elif format == "keras":
+            file_path = os.path.join(EXPORT_FOLDER, "trained_model.keras")
+            model.save(file_path)
             return send_file(file_path, as_attachment=True)
 
         else:
@@ -413,37 +441,71 @@ def export_model(format):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+def generate_python_script(model, training_config, x_train_shape):
+    optimizer = training_config.get("optimizer", "adam").lower()
+    loss_function = training_config.get("lossFunction", "categorical_crossentropy").lower()
+    batch_size = training_config.get("batchSize", 32)
+    epochs = training_config.get("epochs", 10)
 
-def generate_python_script():
-    """
-    Generate Python script code for model architecture and training.
-    """
-    return """
+    # Format input shape for Python syntax (tuple)
+    input_shape_code = str(x_train_shape)
+
+    layers_code = ""
+    for i, layer in enumerate(model.layers):
+        config = layer.get_config()
+        if isinstance(layer, Dense):
+            # Add input_shape only to the first layer
+            input_shape_arg = f"input_shape={input_shape_code}" if i == 0 else ""
+            layers_code += f"Dense({config['units']}, activation='{config['activation']}'{', ' + input_shape_arg if input_shape_arg else ''}),\n"
+        elif isinstance(layer, Conv2D):
+            layers_code += f"Conv2D({config['filters']}, {config['kernel_size']}, activation='{config['activation']}'),\n"
+        elif isinstance(layer, Flatten):
+            layers_code += "Flatten(),\n"
+        elif isinstance(layer, Dropout):
+            layers_code += f"Dropout({config['rate']}),\n"
+
+    return f"""
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense
+from tensorflow.keras.layers import Dense, Conv2D, Flatten, Dropout
 
 # Define the model architecture
 model = Sequential([
-    Dense(128, activation='relu', input_shape=(input_shape_here,)),
-    Dense(64, activation='relu'),
-    Dense(output_units, activation='softmax')  # Adjust based on the dataset
+    {layers_code.strip()}
 ])
 
-model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
-
-# Train the model
-model.fit(x_train, y_train, epochs=10, batch_size=32)
-
-# Save the model
-model.save('trained_model.h5')
+model.compile(optimizer='{optimizer}', loss='{loss_function}', metrics=['accuracy'])
+model.fit(x_train, y_train, epochs={epochs}, batch_size={batch_size}, validation_split=0.2)
+model.save('trained_model.keras')
     """
 
 
-def generate_notebook():
-    """
-    Generate Jupyter Notebook content for model training.
-    """
+
+
+
+def generate_notebook(model, training_config, x_train_shape):
+    optimizer = training_config.get("optimizer", "adam").lower()
+    loss_function = training_config.get("lossFunction", "categorical_crossentropy").lower()
+    batch_size = training_config.get("batchSize", 32)
+    epochs = training_config.get("epochs", 10)
+
+    # Format input shape for Python syntax (tuple)
+    input_shape_code = str(x_train_shape)
+
+    layers_code = ""
+    for i, layer in enumerate(model.layers):
+        config = layer.get_config()
+        if isinstance(layer, Dense):
+            # Add input_shape only to the first layer
+            input_shape_arg = f"input_shape={input_shape_code}" if i == 0 else ""
+            layers_code += f"Dense({config['units']}, activation='{config['activation']}'{', ' + input_shape_arg if input_shape_arg else ''}),\n"
+        elif isinstance(layer, Conv2D):
+            layers_code += f"Conv2D({config['filters']}, {config['kernel_size']}, activation='{config['activation']}'),\n"
+        elif isinstance(layer, Flatten):
+            layers_code += "Flatten(),\n"
+        elif isinstance(layer, Dropout):
+            layers_code += f"Dropout({config['rate']}),\n"
+
     notebook_content = {
         "cells": [
             {
@@ -452,16 +514,14 @@ def generate_notebook():
                 "source": [
                     "import tensorflow as tf\n",
                     "from tensorflow.keras.models import Sequential\n",
-                    "from tensorflow.keras.layers import Dense\n\n",
+                    "from tensorflow.keras.layers import Dense, Conv2D, Flatten, Dropout\n\n",
                     "# Define the model\n",
                     "model = Sequential([\n",
-                    "    Dense(128, activation='relu', input_shape=(input_shape_here,)),\n",
-                    "    Dense(64, activation='relu'),\n",
-                    "    Dense(output_units, activation='softmax')\n",
+                    f"{layers_code.strip()}\n",
                     "])\n\n",
-                    "model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])\n",
-                    "model.fit(x_train, y_train, epochs=10, batch_size=32)\n",
-                    "model.save('trained_model.h5')\n"
+                    f"model.compile(optimizer='{optimizer}', loss='{loss_function}', metrics=['accuracy'])\n",
+                    f"model.fit(x_train, y_train, epochs={epochs}, batch_size={batch_size}, validation_split=0.2)\n",
+                    "model.save('trained_model.keras')\n"
                 ],
                 "execution_count": None,
                 "outputs": []
@@ -472,6 +532,7 @@ def generate_notebook():
         "nbformat_minor": 2
     }
     return json.dumps(notebook_content)
+
 
 
 

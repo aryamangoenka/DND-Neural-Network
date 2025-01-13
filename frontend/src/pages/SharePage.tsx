@@ -19,11 +19,13 @@ const ExportPage = (): JSX.Element => {
       const response = await axios.get(`http://127.0.0.1:5000/export/${format}`, {
         responseType: "blob", // Important for file download
       });
+      // 📝 If exporting as savedmodel, download as a .zip file
+      const fileExtension = format === "savedmodel" ? "zip" : format;
 
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");
       link.href = url;
-      link.setAttribute("download", `trained_model.${format}`);
+      link.setAttribute("download", `trained_model.${fileExtension}`);
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -71,10 +73,10 @@ const ExportPage = (): JSX.Element => {
 
         <button
           className="btn btn-outline-success"
-          onClick={() => handleExport("hdf5")}
+          onClick={() => handleExport("keras")}
           disabled={isDownloading}
         >
-          🔄 Export as HDF5
+          🔄 Export as keras
         </button>
       </div>
 
