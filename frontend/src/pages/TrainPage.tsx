@@ -67,6 +67,9 @@ const TrainPage = (): JSX.Element => {
   const [actual, setActual] = useState<number[]>([]); // Actual values
   const [residuals, setResiduals] = useState<number[]>([]); // Residual values
   const [predictedValues, setPredictedValues] = useState<number[]>([]); // Residual values
+  const [predVsActualChartData, setPredVsActualChartData] = useState<any>(null);
+  const [residualsChartData, setResidualsChartData] = useState<any>(null);
+  const [chartKey, setChartKey] = useState(0);
 
   const handleTrain = (): void => {
     if (!dataset) {
@@ -80,10 +83,13 @@ const TrainPage = (): JSX.Element => {
     setLossData([]); // Clear previous loss data
     setValAccuracyData([]); // Clear previous accuracy data
     setValLossData([]); // Clear previous val loss data
-    setAccuracyData([]); // Clear previous val accuracy data
+    setAccuracyData([]);
+    setChartKey((prev) => prev + 1); // Clear previous val accuracy data
     setPredicted([]);
     setActual([]);
     setPredictedValues([]);
+    setPredVsActualChartData({ datasets: [] });
+    setResidualsChartData({ datasets: [] });
     setResiduals([]);
     setLabels([]); // Clear epoch labels
     setProgress(""); // Clear logs
@@ -99,14 +105,13 @@ const TrainPage = (): JSX.Element => {
     setR2(null);
 
     const payload = {
-      dataset,                         // Assuming this is correct
-      lossFunction: lossFunction,      // Ensure this matches backend keys exactly
+      dataset, // Assuming this is correct
+      lossFunction: lossFunction, // Ensure this matches backend keys exactly
       optimizer: optimizer.toLowerCase(), // Optimizer should be lowercase (e.g., "adam")
-      learningRate:parseFloat(learningRate.toString()), // Convert to float
-      batchSize:parseInt(batchSize.toString(),10),        // Convert to integer
-      epochs:parseInt(epochs.toString(),10),// Convert to integer
+      learningRate: parseFloat(learningRate.toString()), // Convert to float
+      batchSize: parseInt(batchSize.toString(), 10), // Convert to integer
+      epochs: parseInt(epochs.toString(), 10), // Convert to integer
     };
-    
 
     console.log("Training payload sent:", payload);
 
@@ -159,7 +164,6 @@ const TrainPage = (): JSX.Element => {
       setLabels((prev) => [...prev, `Epoch ${parseFloat(data.epoch)}`]); // Append epoch label
     });
 
-
     // Listen for training complete
     socket.on("training_complete", (data) => {
       console.log("Training complete:", data.message);
@@ -182,10 +186,11 @@ const TrainPage = (): JSX.Element => {
       }
 
       if (data.metrics.residuals_plot) {
-        console.log(data.metrics.residuals_plot)
+        console.log(data.metrics.residuals_plot);
         setResiduals(data.metrics.residuals_plot.residuals);
-        setPredictedValues(data.metrics.residuals_plot.predictedValues)
+        setPredictedValues(data.metrics.residuals_plot.predictedValues);
       }
+      alert("training complete...ready to share!")
     });
 
     // Listen for training error
@@ -415,40 +420,49 @@ const TrainPage = (): JSX.Element => {
     );
   };
 
-  // Predicted vs. Actual Chart Data
-  const predictedVsActualChartData = {
-    datasets: [
-      {
-        label: "Predicted vs Actual",
-        data: actual.map((value, index) => ({
-          x: value, // Correct X-axis with actual values
-          y: predicted[index], // Correct Y-axis with predicted values
-        })),
-        borderColor: "rgba(75, 192, 192, 1)",
-        backgroundColor: "rgba(75, 192, 192, 0.2)",
-        pointRadius: 5,
-        pointHoverRadius: 7,
-        showLine: false, // Keep it as a scatter plot
-      },
-    ],
-  };
+  // Update Predicted vs Actual Chart
+  useEffect(() => {
+    if (predicted.length > 0 && actual.length > 0) {
+      setPredVsActualChartData({
+        datasets: [
+          {
+            label: "Predicted vs Actual",
+            data: actual.map((value, index) => ({
+              x: value, // Actual Values on X-axis
+              y: predicted[index], // Predicted Values on Y-axis
+            })),
+            borderColor: "rgba(75, 192, 192, 1)",
+            backgroundColor: "rgba(75, 192, 192, 0.2)",
+            pointRadius: 5,
+            pointHoverRadius: 7,
+            showLine: false,
+          },
+        ],
+      });
+    }
+  }, [predicted, actual]);
 
-  const residualsChartData = {
-    datasets: [
-      {
-        label: "Residuals",
-        data: predictedValues.map((value, index) => ({
-          x: value, // Actual value on X-axis
-          y: residuals[index], // Residual value on Y-axis
-        })),
-        borderColor: "rgba(255, 159, 64, 1)",
-        backgroundColor: "rgba(255, 159, 64, 0.2)",
-        pointRadius: 5,
-        pointHoverRadius: 7,
-        showLine: false, // Keep it as a scatter plot
-      },
-    ],
-  };
+  // Update Residuals Plot
+  useEffect(() => {
+    if (predictedValues.length > 0 && residuals.length > 0) {
+      setResidualsChartData({
+        datasets: [
+          {
+            label: "Residuals",
+            data: predictedValues.map((value, index) => ({
+              x: value, // Predicted Values on X-axis
+              y: residuals[index], // Residuals (Actual - Predicted) on Y-axis
+            })),
+            borderColor: "rgba(255, 159, 64, 1)",
+            backgroundColor: "rgba(255, 159, 64, 0.2)",
+            pointRadius: 5,
+            pointHoverRadius: 7,
+            showLine: false,
+          },
+        ],
+      });
+    }
+  }, [predictedValues, residuals]);
 
   return (
     <div className="train-page">
@@ -576,7 +590,8 @@ const TrainPage = (): JSX.Element => {
                 <div className="chart-wrapper">
                   <h4>Predicted vs Actual</h4>
                   <Line
-                    data={predictedVsActualChartData}
+                    key={`pred-vs-actual-${chartKey}`}
+                    data={predVsActualChartData || { datasets: [] }}
                     options={{
                       responsive: true,
                       plugins: {
@@ -595,7 +610,8 @@ const TrainPage = (): JSX.Element => {
                 <div className="chart-wrapper">
                   <h4>Residuals</h4>
                   <Line
-                    data={residualsChartData}
+                    key={`residuals-${chartKey}`}
+                    data={residualsChartData || { datasets: [] }}
                     options={{
                       responsive: true,
                       plugins: {
@@ -603,7 +619,9 @@ const TrainPage = (): JSX.Element => {
                         tooltip: { enabled: true },
                       },
                       scales: {
-                        x: { title: { display: true, text: "Predicted Values" } },
+                        x: {
+                          title: { display: true, text: "Predicted Values" },
+                        },
                         y: { title: { display: true, text: "Residuals" } },
                       },
                     }}

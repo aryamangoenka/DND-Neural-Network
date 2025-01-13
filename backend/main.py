@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_file
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit
 import json
@@ -367,9 +367,112 @@ def determine_output_units(dataset_name):
         return 1  # Binary classification
     else:
         raise ValueError(f"Unknown dataset: {dataset_name}. Only 'Iris', 'MNIST', 'CIFAR-10', 'California Housing', and 'Breast Cancer' are supported.")
-@app.route("/export", methods=["GET"])
-def export_model():
-    return {"message": "Model exported successfully!"}
+
+# Existing imports and app setup remain unchanged...
+
+EXPORT_FOLDER = "exports"
+os.makedirs(EXPORT_FOLDER, exist_ok=True)  # Ensure the folder exists
+
+@app.route("/export/<format>", methods=["GET"])
+def export_model(format):
+    """
+    Export the trained model in the specified format.
+    Supported formats: py, ipynb, savedmodel, hdf5
+    """
+    try:
+        # Load the trained model (assuming it's saved in memory or disk)
+        model_path = "trained_model.h5"  # Assuming the model is saved here for simplicity
+        model = tf.keras.models.load_model(model_path)
+
+        # Export according to the requested format
+        if format == "py":
+            file_path = os.path.join(EXPORT_FOLDER, "trained_model.py")
+            with open(file_path, "w") as f:
+                f.write(generate_python_script())
+            return send_file(file_path, as_attachment=True)
+
+        elif format == "ipynb":
+            file_path = os.path.join(EXPORT_FOLDER, "trained_model.ipynb")
+            with open(file_path, "w") as f:
+                f.write(generate_notebook())
+            return send_file(file_path, as_attachment=True)
+
+        elif format == "savedmodel":
+            saved_model_dir = os.path.join(EXPORT_FOLDER, "saved_model")
+            model.save(saved_model_dir, save_format="tf")
+            return jsonify({"message": "Model exported as TensorFlow SavedModel."})
+
+        elif format == "hdf5":
+            file_path = os.path.join(EXPORT_FOLDER, "trained_model.h5")
+            model.save(file_path, save_format="h5")
+            return send_file(file_path, as_attachment=True)
+
+        else:
+            return jsonify({"error": f"Unsupported format: {format}"}), 400
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+def generate_python_script():
+    """
+    Generate Python script code for model architecture and training.
+    """
+    return """
+import tensorflow as tf
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
+
+# Define the model architecture
+model = Sequential([
+    Dense(128, activation='relu', input_shape=(input_shape_here,)),
+    Dense(64, activation='relu'),
+    Dense(output_units, activation='softmax')  # Adjust based on the dataset
+])
+
+model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+
+# Train the model
+model.fit(x_train, y_train, epochs=10, batch_size=32)
+
+# Save the model
+model.save('trained_model.h5')
+    """
+
+
+def generate_notebook():
+    """
+    Generate Jupyter Notebook content for model training.
+    """
+    notebook_content = {
+        "cells": [
+            {
+                "cell_type": "code",
+                "metadata": {},
+                "source": [
+                    "import tensorflow as tf\n",
+                    "from tensorflow.keras.models import Sequential\n",
+                    "from tensorflow.keras.layers import Dense\n\n",
+                    "# Define the model\n",
+                    "model = Sequential([\n",
+                    "    Dense(128, activation='relu', input_shape=(input_shape_here,)),\n",
+                    "    Dense(64, activation='relu'),\n",
+                    "    Dense(output_units, activation='softmax')\n",
+                    "])\n\n",
+                    "model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])\n",
+                    "model.fit(x_train, y_train, epochs=10, batch_size=32)\n",
+                    "model.save('trained_model.h5')\n"
+                ],
+                "execution_count": None,
+                "outputs": []
+            }
+        ],
+        "metadata": {},
+        "nbformat": 4,
+        "nbformat_minor": 2
+    }
+    return json.dumps(notebook_content)
+
 
 
 if __name__ == "__main__":
