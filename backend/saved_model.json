@@ -1,1 +1,1 @@
-{}
+{"nodes": [{"id": "Input-1", "type": "input", "data": {"label": "Input Layer"}}, {"id": "Output-1", "type": "output", "data": {"label": "Output Layer", "activation": "Softmax"}}, {"id": "Dense-1736857953332", "type": "dense", "data": {"label": "Dense Layer", "neurons": 128, "activation": "ReLU"}}], "edges": [{"source": "Input-1", "target": "Dense-1736857953332"}, {"source": "Dense-1736857953332", "target": "Output-1"}], "dataset": "Iris"}

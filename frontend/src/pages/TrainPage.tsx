@@ -505,32 +505,7 @@ const TrainPage = (): JSX.Element => {
           </select>
         </div>
 
-        <div className="config-section">
-          <h3>Hyperparameters</h3>
-          <label>Learning Rate:</label>
-          <input
-            type="number"
-            value={learningRate}
-            onChange={(e) => setLearningRate(+e.target.value)}
-            step="0.0001"
-          />
 
-          <label>Batch Size:</label>
-          <input
-            type="number"
-            value={batchSize}
-            onChange={(e) => setBatchSize(+e.target.value)}
-            min="1"
-          />
-
-          <label>Epochs:</label>
-          <input
-            type="number"
-            value={epochs}
-            onChange={(e) => setEpochs(+e.target.value)}
-            min="1"
-          />
-        </div>
       </div>
 
       <div className="main-content">
@@ -654,6 +629,32 @@ const TrainPage = (): JSX.Element => {
               <p>R² Score: {r2 !== null ? r2.toFixed(4) : "N/A"}</p>
             </>
           )}
+        </div>
+        <div className="config-section-1">
+          <h3>Hyperparameters</h3>
+          <label>Learning Rate:</label>
+          <input
+            type="number"
+            value={learningRate}
+            onChange={(e) => setLearningRate(+e.target.value)}
+            step="0.0001"
+          />
+
+          <label>Batch Size:</label>
+          <input
+            type="number"
+            value={batchSize}
+            onChange={(e) => setBatchSize(+e.target.value)}
+            min="1"
+          />
+
+          <label>Epochs:</label>
+          <input
+            type="number"
+            value={epochs}
+            onChange={(e) => setEpochs(+e.target.value)}
+            min="1"
+          />
         </div>
       </div>
     </div>

@@ -24,7 +24,7 @@ import {
   DropoutNode,
   BatchNormalizationNode,
   InputNode,
-  OutputNode
+  OutputNode,
 } from "../components/CustomNodes";
 
 const nodeTypes = {
@@ -529,9 +529,18 @@ const BuildPage = (): JSX.Element => {
           </div>
         ))}
 
-        <p className="text-center">
-          Dataset: <strong>{dataset || "No dataset selected"}</strong>
-        </p>
+        {/* Templates Section */}
+        <div className="templates-section">
+          <h2>Templates</h2>
+          <button onClick={() => loadTemplate("SimpleFeedforward")}>
+            Simple Feedforward
+          </button>
+          <button onClick={() => loadTemplate("CNN")}>CNN</button>
+          <button onClick={() => loadTemplate("FullyConnectedRegression")}>
+            Fully Connected Regression
+          </button>
+          <button onClick={() => loadTemplate("Blank")}>Blank Template</button>
+        </div>
       </div>
 
       <div className="canvas">
@@ -551,15 +560,23 @@ const BuildPage = (): JSX.Element => {
       </div>
 
       <div className="right-sidebar">
-        <h2>Templates</h2>
-        <button onClick={() => loadTemplate("SimpleFeedforward")}>
-          Simple Feedforward
-        </button>
-        <button onClick={() => loadTemplate("CNN")}>CNN</button>
-        <button onClick={() => loadTemplate("FullyConnectedRegression")}>
-          Fully Connected Regression
-        </button>
-        <button onClick={() => loadTemplate("Blank")}>Blank Template</button>
+        <p className="text-center">
+          Dataset: <strong>{dataset || "No dataset selected"}</strong>
+        </p>
+        <div className="train-section">
+          <button
+            className="train-button"
+            onClick={handleSaveConfig}
+            disabled={isTraining} // Disable button during training
+          >
+            {isTraining ? (
+              <span className="spinner"></span> // Spinner while training
+            ) : (
+              "Save Model"
+            )}
+          </button>
+          {isTraining && <p>Training in progress. Please wait...</p>}
+        </div>
 
         <div className="parameters-section">
           <h2>Parameters</h2>
@@ -871,21 +888,6 @@ const BuildPage = (): JSX.Element => {
               )}
             </>
           )}
-        </div>
-
-        <div className="train-section">
-          <button
-            className="train-button"
-            onClick={handleSaveConfig}
-            disabled={isTraining} // Disable button during training
-          >
-            {isTraining ? (
-              <span className="spinner"></span> // Spinner while training
-            ) : (
-              "Save Model"
-            )}
-          </button>
-          {isTraining && <p>Training in progress. Please wait...</p>}
         </div>
       </div>
     </div>
