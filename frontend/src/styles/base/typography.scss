@@ -1,20 +1,20 @@
-@import "../base/variables" ;
-@import "../base/mixins.scss";
+@use "../base/variables";
+@use "../base/mixins";
+
 /* Headings */
 .home-title {
     font-size: 5rem;
     font-weight: 900;
-    color: $text-color;
+    color: variables.$text-color;  /* Corrected */
     text-shadow: 3px 3px 25px rgba(0, 0, 0, 0.8);
     text-transform: uppercase;
     letter-spacing: 3px;
-    @include fadeInDown(1s);
-  }
-  
-  .home-subtitle {
+    @include mixins.fadeInDown(1s);  /* Corrected */
+}
+
+.home-subtitle {
     font-size: 1.8rem;
-    color: lightened($text-color, 30%);
+    color: lightened(variables.$text-color, 30%);  /* Corrected */
     letter-spacing: 1px;
-    @include fadeInUp(1.2s);
-  }
-  
+    @include mixins.fadeInUp(1.2s);  /* Corrected */
+}

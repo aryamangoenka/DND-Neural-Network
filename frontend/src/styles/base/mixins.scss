@@ -6,4 +6,10 @@
   @mixin fadeInUp($duration: 1s) {
     animation: fadeInUp $duration ease-out;
   }
+
+  @mixin fadeIn($duration: 1s, $ease: ease-in-out) {
+    animation: fadeIn $duration $ease;
+  }
+  
+  
   
