@@ -280,7 +280,8 @@ def start_training(data):
             "message": "Training completed successfully!",
             "metrics": final_metrics,
             "loss_over_time": history.history["loss"],
-            "val_loss_over_time": history.history.get("val_loss", [])
+            "val_loss_over_time": history.history.get("val_loss", []),
+            "success":True
         })
         model.save(TRAINED_MODEL_PATH)
     except Exception as e:
@@ -446,16 +447,109 @@ def generate_python_script(model, training_config, x_train_shape):
     loss_function = training_config.get("lossFunction", "categorical_crossentropy").lower()
     batch_size = training_config.get("batchSize", 32)
     epochs = training_config.get("epochs", 10)
+    dataset_name = training_config.get("dataset", "").lower()
 
-    # Format input shape for Python syntax (tuple)
-    input_shape_code = str(x_train_shape)
+    # ✅ Set validation split condition
+    validation_split = 0.2 if dataset_name in ["iris", "breast cancer", "california housing"] else 0.1
 
+
+    # Dataset-specific preprocessing code
+    preprocessing_code = ""
+
+    if dataset_name == "iris":
+        preprocessing_code = """
+from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+
+# Load Iris dataset
+data = load_iris()
+X, y = data.data, data.target
+
+# Standardize features
+scaler = StandardScaler()
+X = scaler.fit_transform(X)
+
+# One-hot encode labels
+encoder = OneHotEncoder(sparse_output=False)
+y = encoder.fit_transform(y.reshape(-1, 1))
+
+# Split data
+x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+"""
+    elif dataset_name == "breast cancer":
+        preprocessing_code = """
+from sklearn.datasets import load_breast_cancer
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+
+# Load Breast Cancer dataset
+data = load_breast_cancer()
+X, y = data.data, data.target
+
+# Standardize features
+scaler = StandardScaler()
+X = scaler.fit_transform(X)
+
+# Split data
+x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
+"""
+    elif dataset_name == "california housing":
+        preprocessing_code = """
+from sklearn.datasets import fetch_california_housing
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+
+# Load California Housing dataset
+data = fetch_california_housing()
+X, y = data.data, data.target
+
+# Standardize features
+scaler = StandardScaler()
+X = scaler.fit_transform(X)
+
+# Split data
+x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+"""
+    elif dataset_name == "mnist":
+        preprocessing_code = """
+from tensorflow.keras.datasets import mnist
+from tensorflow.keras.utils import to_categorical
+
+# Load MNIST dataset
+(x_train, y_train), (x_test, y_test) = mnist.load_data()
+
+# Normalize pixel values
+x_train = x_train.reshape(-1, 28, 28, 1).astype("float32") / 255.0
+x_test = x_test.reshape(-1, 28, 28, 1).astype("float32") / 255.0
+
+# One-hot encode labels
+y_train = to_categorical(y_train, 10)
+y_test = to_categorical(y_test, 10)
+"""
+    elif dataset_name == "cifar-10":
+        preprocessing_code = """
+from tensorflow.keras.datasets import cifar10
+from tensorflow.keras.utils import to_categorical
+
+# Load CIFAR-10 dataset
+(x_train, y_train), (x_test, y_test) = cifar10.load_data()
+
+# Normalize pixel values
+x_train = x_train.astype("float32") / 255.0
+x_test = x_test.astype("float32") / 255.0
+
+# One-hot encode labels
+y_train = to_categorical(y_train, 10)
+y_test = to_categorical(y_test, 10)
+"""
+
+    # Generate model layers code
     layers_code = ""
     for i, layer in enumerate(model.layers):
         config = layer.get_config()
         if isinstance(layer, Dense):
-            # Add input_shape only to the first layer
-            input_shape_arg = f"input_shape={input_shape_code}" if i == 0 else ""
+            input_shape_arg = f"input_shape={x_train_shape}" if i == 0 else ""
             layers_code += f"Dense({config['units']}, activation='{config['activation']}'{', ' + input_shape_arg if input_shape_arg else ''}),\n"
         elif isinstance(layer, Conv2D):
             layers_code += f"Conv2D({config['filters']}, {config['kernel_size']}, activation='{config['activation']}'),\n"
@@ -463,21 +557,39 @@ def generate_python_script(model, training_config, x_train_shape):
             layers_code += "Flatten(),\n"
         elif isinstance(layer, Dropout):
             layers_code += f"Dropout({config['rate']}),\n"
+        elif isinstance(layer, MaxPooling2D):
+            layers_code += f"MaxPooling2D(pool_size={config['pool_size']}),\n"
+        elif isinstance(layer, BatchNormalization):
+            layers_code += "BatchNormalization(),\n"
 
+    # Return the complete script
     return f"""
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Conv2D, Flatten, Dropout
+from tensorflow.keras.layers import Dense, Conv2D, Flatten, Dropout, MaxPooling2D, BatchNormalization
 
-# Define the model architecture
+# Dataset preprocessing
+{preprocessing_code}
+
+# Define the model
 model = Sequential([
     {layers_code.strip()}
 ])
 
 model.compile(optimizer='{optimizer}', loss='{loss_function}', metrics=['accuracy'])
-model.fit(x_train, y_train, epochs={epochs}, batch_size={batch_size}, validation_split=0.2)
+
+# Train the model
+model.fit(x_train, y_train, epochs={epochs}, batch_size={batch_size}, validation_split={validation_split})
+
+# Evaluate the model
+loss, accuracy = model.evaluate(x_test, y_test)
+print(f"Test Loss: {{loss}}")
+print(f"Test Accuracy: {{accuracy}}")
+
+# Save the model
 model.save('trained_model.keras')
-    """
+"""
+
 
 
 
@@ -488,16 +600,110 @@ def generate_notebook(model, training_config, x_train_shape):
     loss_function = training_config.get("lossFunction", "categorical_crossentropy").lower()
     batch_size = training_config.get("batchSize", 32)
     epochs = training_config.get("epochs", 10)
+    dataset_name = training_config.get("dataset", "").lower()
 
-    # Format input shape for Python syntax (tuple)
-    input_shape_code = str(x_train_shape)
+    validation_split = 0.2 if dataset_name in ["iris", "breast cancer", "california housing"] else 0.1
 
+# Dataset-specific preprocessing code
+    preprocessing_code = ""
+
+    if dataset_name == "iris":
+        preprocessing_code = """
+from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+
+# Load Iris dataset
+data = load_iris()
+X, y = data.data, data.target
+
+# Standardize features
+scaler = StandardScaler()
+X = scaler.fit_transform(X)
+
+# One-hot encode labels
+encoder = OneHotEncoder(sparse_output=False)
+y = encoder.fit_transform(y.reshape(-1, 1))
+
+# Split data
+x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+"""
+    elif dataset_name == "breast cancer":
+        preprocessing_code = """
+from sklearn.datasets import load_breast_cancer
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+
+# Load Breast Cancer dataset
+data = load_breast_cancer()
+X, y = data.data, data.target
+
+# Standardize features
+scaler = StandardScaler()
+X = scaler.fit_transform(X)
+
+# Split data
+x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
+"""
+    elif dataset_name == "california housing":
+        preprocessing_code = """
+from sklearn.datasets import fetch_california_housing
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+
+# Load California Housing dataset
+data = fetch_california_housing()
+X, y = data.data, data.target
+
+# Standardize features
+scaler = StandardScaler()
+X = scaler.fit_transform(X)
+
+# Split data
+x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+"""
+    elif dataset_name == "mnist":
+        preprocessing_code = """
+from tensorflow.keras.datasets import mnist
+from tensorflow.keras.utils import to_categorical
+
+# Load MNIST dataset
+(x_train, y_train), (x_test, y_test) = mnist.load_data()
+
+# Normalize pixel values
+x_train = x_train.reshape(-1, 28, 28, 1).astype("float32") / 255.0
+x_test = x_test.reshape(-1, 28, 28, 1).astype("float32") / 255.0
+
+# One-hot encode labels
+y_train = to_categorical(y_train, 10)
+y_test = to_categorical(y_test, 10)
+"""
+    elif dataset_name == "cifar-10":
+        preprocessing_code = """
+from tensorflow.keras.datasets import cifar10
+from tensorflow.keras.utils import to_categorical
+
+# Load CIFAR-10 dataset
+(x_train, y_train), (x_test, y_test) = cifar10.load_data()
+
+# Normalize pixel values
+x_train = x_train.astype("float32") / 255.0
+x_test = x_test.astype("float32") / 255.0
+
+# One-hot encode labels
+y_train = to_categorical(y_train, 10)
+y_test = to_categorical(y_test, 10)
+"""
+
+
+
+
+        # Generate model layers code
     layers_code = ""
     for i, layer in enumerate(model.layers):
         config = layer.get_config()
         if isinstance(layer, Dense):
-            # Add input_shape only to the first layer
-            input_shape_arg = f"input_shape={input_shape_code}" if i == 0 else ""
+            input_shape_arg = f"input_shape={x_train_shape}" if i == 0 else ""
             layers_code += f"Dense({config['units']}, activation='{config['activation']}'{', ' + input_shape_arg if input_shape_arg else ''}),\n"
         elif isinstance(layer, Conv2D):
             layers_code += f"Conv2D({config['filters']}, {config['kernel_size']}, activation='{config['activation']}'),\n"
@@ -505,6 +711,10 @@ def generate_notebook(model, training_config, x_train_shape):
             layers_code += "Flatten(),\n"
         elif isinstance(layer, Dropout):
             layers_code += f"Dropout({config['rate']}),\n"
+        elif isinstance(layer, MaxPooling2D):
+            layers_code += f"MaxPooling2D(pool_size={config['pool_size']}),\n"
+        elif isinstance(layer, BatchNormalization):
+            layers_code += "BatchNormalization(),\n"
 
     notebook_content = {
         "cells": [
@@ -514,13 +724,14 @@ def generate_notebook(model, training_config, x_train_shape):
                 "source": [
                     "import tensorflow as tf\n",
                     "from tensorflow.keras.models import Sequential\n",
-                    "from tensorflow.keras.layers import Dense, Conv2D, Flatten, Dropout\n\n",
+                    "from tensorflow.keras.layers import Dense, Conv2D, Flatten, Dropout, MaxPooling2D, BatchNormalization\n\n",
+                    f"{preprocessing_code}\n\n",
                     "# Define the model\n",
                     "model = Sequential([\n",
                     f"{layers_code.strip()}\n",
                     "])\n\n",
                     f"model.compile(optimizer='{optimizer}', loss='{loss_function}', metrics=['accuracy'])\n",
-                    f"model.fit(x_train, y_train, epochs={epochs}, batch_size={batch_size}, validation_split=0.2)\n",
+                    f"model.fit(x_train, y_train, epochs={epochs}, batch_size={batch_size}, validation_split={validation_split})\n",
                     "model.save('trained_model.keras')\n"
                 ],
                 "execution_count": None,
@@ -531,9 +742,26 @@ def generate_notebook(model, training_config, x_train_shape):
         "nbformat": 4,
         "nbformat_minor": 2
     }
+
     return json.dumps(notebook_content)
 
 
+
+@app.route("/api/clear_model", methods=["POST"])
+def clear_saved_model():
+    """
+    Clear the saved_model.json file when requested by the frontend.
+    """
+    try:
+        if os.path.exists(MODEL_ARCHITECTURE_FILE):
+            with open(MODEL_ARCHITECTURE_FILE, "w") as file:
+                file.write('{}')  # Overwrite with empty JSON
+            print("🧹 saved_model.json has been cleared by frontend request.")
+            return jsonify({"status": "success", "message": "Model cleared successfully!"}), 200
+        else:
+            return jsonify({"status": "error", "message": "Model file not found."}), 404
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 
 if __name__ == "__main__":

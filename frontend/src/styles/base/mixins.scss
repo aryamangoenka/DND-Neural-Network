@@ -1,26 +1,9 @@
-/* mixins.scss */
-
-/* Flex Center */
-@mixin flex-center {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-/* Box Shadow */
-@mixin shadow($color: rgba(0, 0, 0, 0.2)) {
-    box-shadow: 0 4px 8px $color;
-}
-
-/* Responsive Typography */
-@mixin responsive-font($size) {
-    font-size: $size;
-
-    @media (max-width: 768px) {
-        font-size: calc($size * 0.9);
-    }
-
-    @media (max-width: 480px) {
-        font-size: calc($size * 0.8);
-    }
-}
+/* Fade Animations */
+@mixin fadeInDown($duration: 1s) {
+    animation: fadeInDown $duration ease-out;
+  }
+  
+  @mixin fadeInUp($duration: 1s) {
+    animation: fadeInUp $duration ease-out;
+  }
+  

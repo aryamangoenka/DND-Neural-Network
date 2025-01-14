@@ -45,7 +45,7 @@ const TrainPage = (): JSX.Element => {
     setEpochs,
     isTraining,
     setIsTraining,
-
+    setModelTrained,
     setProgress,
     liveMetrics,
     setLiveMetrics,
@@ -166,6 +166,7 @@ const TrainPage = (): JSX.Element => {
 
     // Listen for training complete
     socket.on("training_complete", (data) => {
+      setModelTrained(true);
       console.log("Training complete:", data.message);
       setProgress((prev) => `${prev}\n${data.message}`);
       setIsTraining(false);
@@ -190,7 +191,7 @@ const TrainPage = (): JSX.Element => {
         setResiduals(data.metrics.residuals_plot.residuals);
         setPredictedValues(data.metrics.residuals_plot.predictedValues);
       }
-      alert("training complete...ready to share!")
+      
     });
 
     // Listen for training error
@@ -562,7 +563,7 @@ const TrainPage = (): JSX.Element => {
 
               {/* Confusion Matrix */}
 
-              <h3>Confusion Matrix</h3>
+              
               {confusionMatrix ? (
                 <ConfusionMatrix
                   matrix={confusionMatrix}

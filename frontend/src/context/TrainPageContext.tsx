@@ -25,6 +25,8 @@ interface TrainPageContextProps {
   setProgress: React.Dispatch<React.SetStateAction<string>>;
   liveMetrics: LiveMetrics;
   setLiveMetrics: React.Dispatch<React.SetStateAction<LiveMetrics>>;
+  modelTrained: boolean;                     // ✅ New flag to track training completion
+  setModelTrained: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const TrainPageContext = createContext<TrainPageContextProps | undefined>(
@@ -48,6 +50,7 @@ export const TrainPageProvider: React.FC<{ children: React.ReactNode }> = ({
     val_loss: 0,
     val_accuracy: 0,
   });
+  const [modelTrained, setModelTrained] = useState<boolean>(false);
 
   return (
     <TrainPageContext.Provider
@@ -68,6 +71,8 @@ export const TrainPageProvider: React.FC<{ children: React.ReactNode }> = ({
         setProgress,
         liveMetrics,
         setLiveMetrics,
+        modelTrained,              // ✅ Pass state to context
+        setModelTrained,
       }}
     >
       {children}

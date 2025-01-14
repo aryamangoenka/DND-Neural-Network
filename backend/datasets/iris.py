@@ -1,6 +1,6 @@
 from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import OneHotEncoder
+from sklearn.preprocessing import OneHotEncoder,StandardScaler
 import tensorflow as tf
 def load_iris_dataset():
     """
@@ -11,6 +11,9 @@ def load_iris_dataset():
     """
     data = load_iris()
     X, y = data.data, data.target
+    # ✅ Normalize features
+    scaler = StandardScaler()
+    X = scaler.fit_transform(X)
     encoder = OneHotEncoder(sparse_output=False)
     y = encoder.fit_transform(y.reshape(-1, 1))  # One-hot encode labels
     x_train, x_test, y_train, y_test = train_test_split(

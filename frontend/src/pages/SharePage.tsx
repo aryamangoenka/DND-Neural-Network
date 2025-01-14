@@ -3,16 +3,21 @@ import axios from "axios";
 import "../styles/components/SharePage.scss";
 import { useDataset } from "../context/DatasetContext";
 import 'bootstrap/dist/css/bootstrap.min.css';
-
+import { useTrainPageContext } from "../context/TrainPageContext";
 
 const ExportPage = (): JSX.Element => {
   const dataset: string = useDataset()?.dataset || "Unknown";
   const [statusMessage, setStatusMessage] = useState<string>("");
-  const [isDownloading, setIsDownloading] = useState<boolean>(false);
+  
+  const { modelTrained } = useTrainPageContext();
 
   // Generic function to handle downloads
   const handleExport = async (format: string) => {
-    setIsDownloading(true);
+    if (!modelTrained) {
+      alert("⚠️ Please train the model before exporting.");
+      return;  // Stop export if model isn't trained
+    }
+    
     setStatusMessage(`Exporting model as ${format.toUpperCase()}...`);
 
     try {
@@ -36,7 +41,7 @@ const ExportPage = (): JSX.Element => {
       setStatusMessage(`Failed to export model as ${format.toUpperCase()}.`);
     }
 
-    setIsDownloading(false);
+    
   };
 
   return (
@@ -50,7 +55,7 @@ const ExportPage = (): JSX.Element => {
         <button
           className="btn btn-outline-primary"
           onClick={() => handleExport("py")}
-          disabled={isDownloading}
+          
         >
           📄 Export as Python Script
         </button>
@@ -58,7 +63,7 @@ const ExportPage = (): JSX.Element => {
         <button
           className="btn btn-outline-success"
           onClick={() => handleExport("ipynb")}
-          disabled={isDownloading}
+          
         >
           📓 Export as Jupyter Notebook
         </button>
@@ -66,7 +71,7 @@ const ExportPage = (): JSX.Element => {
         <button
           className="btn btn-outline-warning"
           onClick={() => handleExport("savedmodel")}
-          disabled={isDownloading}
+          
         >
           🔄 Export as SavedModel
         </button>
@@ -74,7 +79,7 @@ const ExportPage = (): JSX.Element => {
         <button
           className="btn btn-outline-success"
           onClick={() => handleExport("keras")}
-          disabled={isDownloading}
+          
         >
           🔄 Export as keras
         </button>

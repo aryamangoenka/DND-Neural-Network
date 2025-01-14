@@ -1,13 +1,16 @@
-@use "../base/variables" as vars;
-
-.shadow-sm {
-    box-shadow: vars.$shadow-sm;
-}
-
-.shadow-hover:hover {
-    box-shadow: vars.$shadow-hover;
-}
-
-.transition {
-    transition: all 0.3s ease;
-}
+/* ✨ Button Hover Effect */
+.btn-hover {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  
+  .btn-hover:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px rgba(255, 65, 108, 0.8);
+  }
+  
+  /* 🔥 Fade Animations */
+  @keyframes fadeIn {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
+  }
+  

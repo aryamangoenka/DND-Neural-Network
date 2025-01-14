@@ -1,12 +1,21 @@
 /* variables.scss */
 
 /* Colors */
-$primary-color: #292c2e;          // Background color for the navbar
+
 $link-color: #ffffff;             // Default link color
 $link-hover-color: #adb5bd;       // Hover color for links
 $active-link-color: #d8e21a;      // Active link color
 $card-bg-color: #f8f9fa;          // Background color for cards or additional UI components
 $text-black: #000000;
+$primary-color: #2c5364;
+$secondary-color: #203a43;
+$accent-color: #ff512f;
+$background-color: #0f2027;
+$text-color: #ffffff;
+
+/* 🔤 Fonts */
+$font-family: 'Poppins', sans-serif;
+
 
 /* Responsive Breakpoints */
 $breakpoint-sm: 576px;

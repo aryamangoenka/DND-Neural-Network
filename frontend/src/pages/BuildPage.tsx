@@ -55,10 +55,11 @@ const BuildPage = (): JSX.Element => {
     const defaultParams: Record<string, any> = {
       dense: { neurons: 64, activation: "None" },
       convolution: { filters: 32, kernelSize: [3, 3], stride: [1, 1] },
+      maxpooling: { poolSize: [2, 2], stride: [2, 2], padding: "none" },
       dropout: { rate: 0.2 },
       activation: { activation: "ReLU" },
       batchnormalization: { momentum: 0.99, epsilon: 0.001 },
-      output: { activation: "Softmax" },
+      output: { activation: "None" },
     };
 
     const newNode: Node = {
@@ -832,9 +833,10 @@ const BuildPage = (): JSX.Element => {
                   {/* Padding */}
                   <label>Padding:</label>
                   <select
-                    value={selectedNode.data.padding || "valid"}
+                    value={selectedNode.data.padding || "none"}
                     onChange={(e) => updateParameter("padding", e.target.value)}
                   >
+                    <option value="none">None</option>
                     <option value="valid">Valid</option>
                     <option value="same">Same</option>
                   </select>

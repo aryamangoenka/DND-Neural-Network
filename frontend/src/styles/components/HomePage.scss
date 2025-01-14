@@ -1,82 +1,161 @@
-@use "../base/variables" as vars;
-@use "../base/mixins" as mixins;
+/* HomePage.scss */
 
-/* Main Container */
+/* 1. Global Styles */
 .container-fluid {
-    @include mixins.flex-center;
-    flex-direction: column;
-    min-height: 100vh;
-    background-color: #1f2937;
-    color: vars.$link-color;
-    padding: vars.$space-lg;
-}
-
-/* Title Styles */
-.home-title {
-    font-size: vars.$font-large;
-    font-weight: vars.$font-weight-bold;
-    margin-bottom: vars.$space-md;
-
-    @include mixins.responsive-font(vars.$font-large);
-}
-
-/* Subtitle Styles */
-.home-subtitle {
-    font-size: vars.$font-base;
-    color: vars.$link-hover-color;
-    margin-bottom: vars.$space-lg;
-}
-
-/* Dropdown Menu */
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+    overflow: hidden;
+    padding: 0 2rem;
+  }
+  
+  .hero-section {
+    text-align: center;
+    color: #ffffff;
+    animation: fadeIn 1.2s ease-out;
+  }
+  
+  /* 2. Title Styling */
+  .home-title {
+    font-size: 5rem;
+    font-weight: 900;
+    color: #ffffff;
+    text-shadow: 3px 3px 25px rgba(0, 0, 0, 0.8);
+    margin-bottom: 1rem;
+    animation: fadeInDown 1s ease-out;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+  
+  .home-subtitle {
+    font-size: 1.8rem;
+    color: #d1e3ff;
+    margin-bottom: 3rem;
+    animation: fadeInUp 1.2s ease-out;
+    letter-spacing: 1px;
+  }
+  
+  /* 3. Custom Dropdown Styling */
 .dropdown-wrapper {
-    margin-bottom: vars.$space-md;
-
-    .form-select {
-        background-color: vars.$card-bg-color;
-        color: black;
-        border: 1px solid vars.$link-hover-color;
-        max-width: 400px;
-        padding: vars.$space-sm;
-        font-size: vars.$font-base;
-
-        &:focus {
-            box-shadow: none;
-            border-color: vars.$active-link-color;
-        }
+    width: 60%;
+    max-width: 450px;
+    margin: 0 auto 2rem auto;
+    animation: fadeIn 1.5s ease-out;
+    position: relative;
+  }
+  
+  .custom-dropdown {
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+    padding: 0.75rem 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  
+  .custom-dropdown:hover {
+    background-color: #f1f1f1;
+  }
+  
+  .dropdown-options {
+    position: absolute;
+    top: 100%;
+    width: 100%;
+    background-color: #ffffff;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+    border-radius: 12px;
+    margin-top: 0.5rem;
+    z-index: 1000;
+    overflow: hidden;
+  }
+  
+  .dropdown-option {
+    padding: 0.75rem 1rem;
+    display: flex;
+    align-items: center;
+    transition: background-color 0.3s ease;
+  }
+  
+  .dropdown-option:hover {
+    background-color: #f1f1f1;
+  }
+  
+  .dropdown-icon {
+    margin-right: 10px;
+    font-size: 1.2rem;
+  }
+  
+  
+  /* 4. Proceed Button Styling */
+  .proceed-button {
+    padding: 1rem 3rem;
+    font-size: 1.4rem;
+    border-radius: 50px;
+    border: none;
+    background-image: linear-gradient(to right, #ff512f, #dd2476);
+    color: #fff;
+    cursor: pointer;
+    box-shadow: 0 8px 25px rgba(255, 81, 47, 0.6);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+  }
+  
+  .proceed-button:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 35px rgba(255, 81, 47, 0.8);
+  }
+  
+  /* 5. Animations */
+  @keyframes fadeInDown {
+    0% {
+      opacity: 0;
+      transform: translateY(-20px);
     }
-}
-
-/* Button Styles */
-.proceed-button {
-    background-color: vars.$active-link-color;
-    color: vars.$text-black;
-    font-size: vars.$font-base;
-    font-weight: vars.$font-weight-bold;
-    padding: vars.$space-sm vars.$space-md;
-    border-radius: vars.$space-sm;
-    transition: background-color vars.$transition-duration vars.$transition-ease;
-
-    &:hover {
-        background-color: light-dark(vars.$active-link-color, 10%);
+    100% {
+      opacity: 1;
+      transform: translateY(0);
     }
-}
-
-/* Cards or Panels */
-.card {
-    background-color: vars.$card-bg-color;
-    padding: vars.$space-md;
-    border-radius: vars.$space-sm;
-    box-shadow: vars.$shadow-sm;
-    margin-bottom: vars.$space-lg;
-
-    &:hover {
-        @include mixins.shadow(vars.$shadow-hover);
+  }
+  
+  @keyframes fadeInUp {
+    0% {
+      opacity: 0;
+      transform: translateY(20px);
     }
-}
-
-/* Responsive Breakpoints */
-@media (max-width: vars.$breakpoint-md) {
-    .container-fluid {
-        padding: vars.$space-md;
+    100% {
+      opacity: 1;
+      transform: translateY(0);
     }
-}
+  }
+  
+  @keyframes fadeIn {
+    0% {
+      opacity: 0;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
+  
+  /* 6. Responsive Design */
+  @media (max-width: 768px) {
+    .home-title {
+      font-size: 3rem;
+    }
+    .home-subtitle {
+      font-size: 1.2rem;
+    }
+    .dropdown-wrapper {
+      width: 90%;
+    }
+    .proceed-button {
+      width: 90%;
+    }
+  }
+  

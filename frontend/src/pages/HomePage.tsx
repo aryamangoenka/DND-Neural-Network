@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useDataset } from "../context/DatasetContext"; // Custom context hook
 import "../styles/components/HomePage.scss"; // SCSS styling for HomePage
 
+
 // Define props for HomePage (empty for now, but extensible)
 interface HomePageProps {}
 
@@ -10,28 +11,12 @@ const HomePage = ({}: HomePageProps) => {
     const navigate = useNavigate(); // For navigation
     const { setDataset } = useDataset(); // Access global dataset state management
 
-    // Predefined datasets
     const datasets = [
-        { 
-            name: "Iris", 
-            description: "Iris dataset for multi-class classification tasks." 
-        },
-        { 
-            name: "MNIST", 
-            description: "MNIST dataset for image classification." 
-        },
-        { 
-            name: "California Housing", 
-            description: "California Housing dataset for regression tasks." 
-        },
-        { 
-            name: "CIFAR-10", 
-            description: "CIFAR-10 dataset for multi-class image classification." 
-        },
-        { 
-            name: "Breast Cancer", 
-            description: "Breast Cancer Wisconsin dataset for binary classification." 
-        }
+        { name: "Iris", description: "Multi-class classification" },
+        { name: "MNIST", description: "Image classification" },
+        { name: "California Housing", description: "Regression tasks" },
+        { name: "CIFAR-10", description: "Image classification" },
+        { name: "Breast Cancer", description: "Binary classification" }
     ];
     
 
@@ -50,20 +35,17 @@ const HomePage = ({}: HomePageProps) => {
 
     return (
         <div className="container-fluid">
-            <div className="text-center">
-                <h1 className="home-title">Build.Train.Share</h1>
-                <p className="home-subtitle">
-                    An Interactive Drag-and-Drop Neural Network Builder
-                </p>
-                {/* Dropdown for dataset selection */}
+            <div className="hero-section">
+                <h1 className="home-title">🚀 Build. Train. Share.</h1>
+                <p className="home-subtitle">An Interactive Drag-and-Drop Neural Network Builder</p>
+
                 <div className="dropdown-wrapper">
                     <select
                         className="form-select"
                         value={selectedDataset}
                         onChange={(e) => setSelectedDataset(e.target.value)}
-                        
                     >
-                        <option value="">Select Dataset</option>
+                        <option value="">📂 Select Dataset</option>
                         {datasets.map((dataset) => (
                             <option key={dataset.name} value={dataset.name}>
                                 {dataset.name} - {dataset.description}
@@ -71,12 +53,12 @@ const HomePage = ({}: HomePageProps) => {
                         ))}
                     </select>
                 </div>
-                {/* Proceed button */}
+
                 <button
                     className="btn btn-secondary btn-lg proceed-button"
                     onClick={handleDatasetSelect}
                 >
-                    Proceed
+                    🚀 Proceed
                 </button>
             </div>
         </div>
