@@ -84,7 +84,7 @@
 
 .progress-bar-fill {
   height: 1.5rem;
-  background-image: linear-gradient(to right, #ff512f, #dd2476);
+  background-image: linear-gradient(to right, #258a42, #1de919);
   transition: width 0.5s ease-in-out;
   text-align: center;
   color: #fff;
@@ -104,12 +104,26 @@
 }
 
 .chart-small {
-  flex: 1;
-  background-color: #203a43;
+  width: 550px;   /* ✅ Same width for all */
+  height: 400px;  /* ✅ Same height for all */
+  background-color: #e9eade;
   padding: 1rem;
   border-radius: 10px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+  margin-bottom: 1.5rem;
+  color:#0f2027;
 }
+/* Residual Plot Specific Styling */
+.residuals-chart-wrapper {
+  width: 600px;   /* Keep width same as Loss Graph */
+  height: 400px;  /* Reduced height */
+  background-color: #e9eade;
+  padding: 1rem;
+  border-radius: 10px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+  color:#0f2027;
+}
+
 
 /* 4. Right Sidebar */
 .right-sidebar {
@@ -198,10 +212,11 @@
 
 .chart-wrapper {
   flex: 1;
-  background-color: #203a43;
+  background-color: #e9eade;
   padding: 1rem;
   border-radius: 10px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+  color:#0f2027;
 }
 
 .loss-chart-wrapper {

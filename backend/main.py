@@ -14,7 +14,11 @@ import tensorflow as tf
 from tensorflow.keras.backend import clear_session
 import shutil
 import time
-
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+import io
+import base64
 
 
 # Dictionary to track stop flags for each client
@@ -241,7 +245,6 @@ def start_training(data):
             
 
         elif dataset == "California Housing":
-            # Make predictions
             predictions = model.predict(x_test)
 
             # Ensure predictions and y_test are NumPy arrays
@@ -249,29 +252,68 @@ def start_training(data):
             y_test = y_test if isinstance(y_test, np.ndarray) else y_test.numpy()
 
             # Calculate residuals
-            residuals = (y_test - predictions).tolist()  # ✅ Removed .numpy()
+            residuals = (y_test - predictions).tolist()
 
             # Compute Regression Metrics
-            rmse = np.sqrt(mean_squared_error(y_test, predictions))  # ✅ NumPy arrays used
-            r2 = r2_score(y_test, predictions)                      # ✅ NumPy arrays used
+            rmse = np.sqrt(mean_squared_error(y_test, predictions))
+            r2 = r2_score(y_test, predictions)
 
             # Save metrics
             final_metrics["rmse"] = rmse
             final_metrics["r2"] = r2
 
-            # Save predicted vs actual for visualization
-            final_metrics["predicted_vs_actual"] = {
-                "predicted": predictions.tolist(),  # ✅ Removed redundant .numpy()
-                "actual": y_test.tolist()           # ✅ Removed redundant .numpy()
+            # Send raw data for residual plot
+            final_metrics["residuals_plot"] = {
+                "predicted_values": predictions.tolist(),
+                "residuals": residuals
             }
 
-            # Save residuals plot data (Predicted vs Residuals)
-            final_metrics["residuals_plot"] = {
-                "predictedValues": predictions.tolist(),  # ✅ Predicted on X-axis
-                "residuals": residuals              # ✅ Residuals on Y-axis
-            }
-            #print(final_metrics["predicted_vs_actual"])
-            print(final_metrics["predicted_vs_actual"]["predicted"])
+            print("✅ Residual plot data sent to frontend.")
+
+
+            # ------------------ Multicollinearity Heatmap ------------------
+
+            # Convert feature set to DataFrame for easy correlation calculation
+            feature_names = [
+                "MedInc", "HouseAge", "AveRooms", "AveBedrms",
+                "Population", "AveOccup", "Latitude", "Longitude"
+            ]  # Replace with actual feature names if different
+            # Convert Tensor to NumPy array if needed
+            x_test_np = x_test if isinstance(x_test, np.ndarray) else x_test.numpy()
+
+            x_test_df = pd.DataFrame(x_test_np, columns=feature_names)
+
+            # Compute Pearson Correlation Matrix
+            correlation_matrix = x_test_df.corr().values  # Get correlation values
+
+            # Generate heatmap
+            plt.figure(figsize=(10, 8))
+            sns.heatmap(
+                correlation_matrix,
+                annot=True,
+                cmap="coolwarm",
+                center=0,
+                linewidths=0.5,
+                fmt=".2f",
+                annot_kws={"size": 10}
+            )
+            plt.title("Multicollinearity Heatmap")
+
+            # Convert heatmap to base64
+            buf = io.BytesIO()
+            plt.savefig(buf, format='png')
+            buf.seek(0)
+            heatmap_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
+            buf.close()
+            plt.close()
+
+            # Add heatmap to metrics
+            final_metrics["multicollinearity_heatmap"] = heatmap_base64
+            print("✅ Multicollinearity heatmap generated.")
+
+
+
+
 
         # Emit final training results
         #print("Payload emitted to frontend:", {"message": "Training completed successfully!", "metrics": final_metrics})

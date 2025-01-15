@@ -63,13 +63,14 @@ const TrainPage = (): JSX.Element => {
   );
   const [rmse, setRmse] = useState<number | null>(null);
   const [r2, setR2] = useState<number | null>(null);
-  const [predicted, setPredicted] = useState<number[]>([]); // Predicted values
-  const [actual, setActual] = useState<number[]>([]); // Actual values
+
   const [residuals, setResiduals] = useState<number[]>([]); // Residual values
   const [predictedValues, setPredictedValues] = useState<number[]>([]); // Residual values
-  const [predVsActualChartData, setPredVsActualChartData] = useState<any>(null);
+
   const [residualsChartData, setResidualsChartData] = useState<any>(null);
   const [chartKey, setChartKey] = useState(0);
+
+  const [heatmapImage, setHeatmapImage] = useState<string | null>(null);
 
   const handleTrain = (): void => {
     if (!dataset) {
@@ -85,10 +86,9 @@ const TrainPage = (): JSX.Element => {
     setValLossData([]); // Clear previous val loss data
     setAccuracyData([]);
     setChartKey((prev) => prev + 1); // Clear previous val accuracy data
-    setPredicted([]);
-    setActual([]);
+
     setPredictedValues([]);
-    setPredVsActualChartData({ datasets: [] });
+
     setResidualsChartData({ datasets: [] });
     setResiduals([]);
     setLabels([]); // Clear epoch labels
@@ -180,18 +180,25 @@ const TrainPage = (): JSX.Element => {
       if (data.metrics.rmse) setRmse(data.metrics.rmse);
       if (data.metrics.r2) setR2(data.metrics.r2);
 
-      if (data.metrics.predicted_vs_actual) {
-        console.log("Predicted vs Actual:", data.metrics.predicted_vs_actual);
-        setPredicted(data.metrics.predicted_vs_actual.predicted);
-        setActual(data.metrics.predicted_vs_actual.actual);
-      }
-
+      // ✅ Corrected residuals plot data extraction
       if (data.metrics.residuals_plot) {
         console.log(data.metrics.residuals_plot);
-        setResiduals(data.metrics.residuals_plot.residuals);
-        setPredictedValues(data.metrics.residuals_plot.predictedValues);
+
+        // Ensure data is not undefined
+        const predictedData =
+          data.metrics.residuals_plot.predicted_values || [];
+        const residualsData = data.metrics.residuals_plot.residuals || [];
+
+        setPredictedValues(predictedData);
+        setResiduals(residualsData);
       }
-      
+
+      // Check and set the multicollinearity heatmap data
+      if (data.metrics?.multicollinearity_heatmap) {
+        setHeatmapImage(
+          `data:image/png;base64,${data.metrics.multicollinearity_heatmap}`
+        );
+      }
     });
 
     // Listen for training error
@@ -421,44 +428,29 @@ const TrainPage = (): JSX.Element => {
     );
   };
 
-  // Update Predicted vs Actual Chart
+  // Corrected Residuals Plot
   useEffect(() => {
-    if (predicted.length > 0 && actual.length > 0) {
-      setPredVsActualChartData({
-        datasets: [
-          {
-            label: "Predicted vs Actual",
-            data: actual.map((value, index) => ({
-              x: value, // Actual Values on X-axis
-              y: predicted[index], // Predicted Values on Y-axis
-            })),
-            borderColor: "rgba(75, 192, 192, 1)",
-            backgroundColor: "rgba(75, 192, 192, 0.2)",
-            pointRadius: 5,
-            pointHoverRadius: 7,
-            showLine: false,
-          },
-        ],
-      });
-    }
-  }, [predicted, actual]);
+    if (
+      predictedValues &&
+      residuals &&
+      predictedValues.length > 0 &&
+      residuals.length > 0
+    ) {
+      const plotData = predictedValues.map((pred, index) => ({
+        x: pred, // Predicted values on X-axis
+        y: residuals[index], // Residuals on Y-axis
+      }));
 
-  // Update Residuals Plot
-  useEffect(() => {
-    if (predictedValues.length > 0 && residuals.length > 0) {
       setResidualsChartData({
         datasets: [
           {
-            label: "Residuals",
-            data: predictedValues.map((value, index) => ({
-              x: value, // Predicted Values on X-axis
-              y: residuals[index], // Residuals (Actual - Predicted) on Y-axis
-            })),
-            borderColor: "rgba(255, 159, 64, 1)",
-            backgroundColor: "rgba(255, 159, 64, 0.2)",
+            label: "Residuals Plot",
+            data: plotData,
+            borderColor: "rgba(255, 159, 64, 1)", // Orange color
+            backgroundColor: "rgba(255, 159, 64, 0.2)", // Light orange
             pointRadius: 5,
             pointHoverRadius: 7,
-            showLine: false,
+            showLine: false, // Scatter plot style
           },
         ],
       });
@@ -504,8 +496,6 @@ const TrainPage = (): JSX.Element => {
             <option value="Adagrad">Adagrad</option>
           </select>
         </div>
-
-
       </div>
 
       <div className="main-content">
@@ -538,7 +528,6 @@ const TrainPage = (): JSX.Element => {
 
               {/* Confusion Matrix */}
 
-              
               {confusionMatrix ? (
                 <ConfusionMatrix
                   matrix={confusionMatrix}
@@ -555,54 +544,69 @@ const TrainPage = (): JSX.Element => {
         <div className="dataset-visualizations">
           {dataset === "California Housing" && (
             <div className="cali-visualizations">
+              <div className="charts-row">
               {/* Smaller Loss Graph on Top */}
               <div className="loss-chart-wrapper">
-                <h3>Loss Over Time</h3>
-                <Line data={lossChartData} options={chartOptions} />
+                <div className="chart-small">
+                  <h3>Loss Over Time</h3>
+                  <Line data={lossChartData} options={chartOptions} />
+                </div>
               </div>
+              <div className="residuals-chart-wrapper">
+                
+                  <h4>Residuals Plot</h4>
+                  {residualsChartData ? (
+                    <Line
+                      key={`residuals-${chartKey}`}
+                      data={residualsChartData}
+                      options={{
+                        responsive: true,
+                        plugins: {
+                          legend: { display: true },
+                          tooltip: { enabled: true },
+                        },
+                        scales: {
+                          x: {
+                            type: "linear",
+                            title: {
+                              display: true,
+                              text: "Predicted Values", // X-axis
+                            },
+                            grid: { display: true },
+                          },
+                          y: {
+                            title: {
+                              display: true,
+                              text: "Residuals (Actual - Predicted)", // Y-axis
+                            },
+                            grid: { display: true },
+                          },
+                        },
+                      }}
+                    />
+                  ) : (
+                    <p>Residuals Plot not available.</p>
+                  )}
+                </div>
+                </div>
 
-              {/* Predicted vs. Actual and Residuals Plots Side by Side */}
+              
               <div className="regression-charts-container">
                 <div className="chart-wrapper">
-                  <h4>Predicted vs Actual</h4>
-                  <Line
-                    key={`pred-vs-actual-${chartKey}`}
-                    data={predVsActualChartData || { datasets: [] }}
-                    options={{
-                      responsive: true,
-                      plugins: {
-                        legend: { display: true },
-                        tooltip: { enabled: true },
-                      },
-                      scales: {
-                        x: { title: { display: true, text: "Actual Values" } },
-                        y: {
-                          title: { display: true, text: "Predicted Values" },
-                        },
-                      },
-                    }}
-                  />
+                  <h4>Multicollinearity Heatmap</h4>
+                  <div>
+                    {heatmapImage ? (
+                      <img
+                        src={heatmapImage}
+                        alt="Multicollinearity Heatmap"
+                        style={{ width: "100%", maxWidth: "800px" }}
+                      />
+                    ) : (
+                      <p>Multicollinearity Heatmap not available.</p>
+                    )}
+                  </div>
                 </div>
-                <div className="chart-wrapper">
-                  <h4>Residuals</h4>
-                  <Line
-                    key={`residuals-${chartKey}`}
-                    data={residualsChartData || { datasets: [] }}
-                    options={{
-                      responsive: true,
-                      plugins: {
-                        legend: { display: true },
-                        tooltip: { enabled: true },
-                      },
-                      scales: {
-                        x: {
-                          title: { display: true, text: "Predicted Values" },
-                        },
-                        y: { title: { display: true, text: "Residuals" } },
-                      },
-                    }}
-                  />
-                </div>
+                
               </div>
             </div>
           )}
@@ -621,8 +625,15 @@ const TrainPage = (): JSX.Element => {
           </button>
 
           <p>Batch Progress: {trainingProgress.toFixed(2)}%</p>
-          <p>Loss: {liveMetrics.loss?.toFixed(6) || "N/A"}</p>
-          <p>Accuracy: {liveMetrics.accuracy?.toFixed(6) || "N/A"}</p>
+          <p>Loss: {liveMetrics.loss?.toFixed(6) || "N/A"}
+          <p>Validation Loss: {liveMetrics.val_loss?.toFixed(6) || "N/A"}</p></p>
+          {dataset !== "California Housing" && (
+            <p>Accuracy: {liveMetrics.accuracy?.toFixed(6) || "N/A"}
+
+            <p>Validation Accuracy: {liveMetrics.val_accuracy?.toFixed(6) || "N/A"}</p>
+            </p>
+            
+          )}
           {dataset === "California Housing" && (
             <>
               <p>RMSE: {rmse !== null ? rmse.toFixed(4) : "N/A"}</p>
