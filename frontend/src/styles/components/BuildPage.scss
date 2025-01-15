@@ -47,7 +47,7 @@
 
 .layer-card button {
   padding: 0.4rem 0.8rem;
-  background-image: linear-gradient(to right, #ff512f, #dd2476);
+  background: linear-gradient(45deg, #9D00FF, #B44AF1);
   border: none;
   border-radius: 20px;
   color: #ffffff;
@@ -70,20 +70,21 @@
 .templates-section button {
   width: 100%;
   padding: 0.8rem;
-  background-image: linear-gradient(to right, #ff512f, #dd2476);
+  background-image: linear-gradient(45deg, #00F5A0, #00D9F5);
   border: none;
   border-radius: 25px;
-  color: #ffffff;
+  color: #1d1b1b;
   font-weight: bold;
   cursor: pointer;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
   margin-bottom: 0.8rem;
   margin-top: 0.8rem;
+  
 }
 
 .templates-section button:hover {
   transform: translateY(-3px);
-  box-shadow: 0 6px 20px rgba(255, 81, 47, 0.6);
+  box-shadow: 0 4px 15px rgba(0, 245, 160, 0.4);
 }
 
 /* 3. Canvas Area */
@@ -101,7 +102,7 @@
   width: 18%;
   background-color: rgba(15, 32, 39, 0.95);
   padding: 1.5rem 1rem;
-  box-shadow: -2px 0 15px rgba(0, 0, 0, 0.7);
+  box-shadow: 0 4px 15px rgba(0, 137, 123, 0.4);
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -118,10 +119,10 @@
 .right-sidebar button {
   width: 100%;
   padding: 0.8rem;
-  background-image: linear-gradient(to right, #ff512f, #dd2476);
+  background-image: linear-gradient(45deg, #00897B, #26A69A);
   border: none;
   border-radius: 25px;
-  color: #ffffff;
+  color: #191717;
   font-weight: bold;
   cursor: pointer;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
@@ -129,7 +130,7 @@
 
 .right-sidebar button:hover {
   transform: translateY(-3px);
-  box-shadow: 0 6px 20px rgba(255, 81, 47, 0.6);
+  box-shadow: 0 4px 15px rgba(0, 137, 123, 0.4);
 }
 
 /* 5. Parameters Section */
@@ -167,7 +168,6 @@
   font-weight: bold;
   font-size: 1.2rem;
   cursor: pointer;
-  box-shadow: 0 8px 25px rgba(255, 81, 47, 0.6);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
   margin-top: 1rem;
 }

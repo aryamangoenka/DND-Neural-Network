@@ -5,36 +5,35 @@ from tensorflow.keras.layers import Dense, Conv2D, Flatten, Dropout, MaxPooling2
 
 # Dataset preprocessing
 
-from sklearn.datasets import load_iris
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from tensorflow.keras.datasets import cifar10
+from tensorflow.keras.utils import to_categorical
 
-# Load Iris dataset
-data = load_iris()
-X, y = data.data, data.target
+# Load CIFAR-10 dataset
+(x_train, y_train), (x_test, y_test) = cifar10.load_data()
 
-# Standardize features
-scaler = StandardScaler()
-X = scaler.fit_transform(X)
+# Normalize pixel values
+x_train = x_train.astype("float32") / 255.0
+x_test = x_test.astype("float32") / 255.0
 
 # One-hot encode labels
-encoder = OneHotEncoder(sparse_output=False)
-y = encoder.fit_transform(y.reshape(-1, 1))
-
-# Split data
-x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+y_train = to_categorical(y_train, 10)
+y_test = to_categorical(y_test, 10)
 
 
 # Define the model
 model = Sequential([
-    Dense(1778, activation='tanh', input_shape=(4,)),
-Dense(3, activation='softmax'),
+    Conv2D(48, (3, 3), activation='relu'),
+MaxPooling2D(pool_size=(2, 2)),
+Dense(128, activation='relu'),
+Dense(128, activation='relu'),
+Flatten(),
+Dense(10, activation='softmax'),
 ])
 
 model.compile(optimizer='adam', loss='categorical cross-entropy', metrics=['accuracy'])
 
 # Train the model
-model.fit(x_train, y_train, epochs=10, batch_size=32, validation_split=0.2)
+model.fit(x_train, y_train, epochs=1, batch_size=32, validation_split=0.1)
 
 # Evaluate the model
 loss, accuracy = model.evaluate(x_test, y_test)

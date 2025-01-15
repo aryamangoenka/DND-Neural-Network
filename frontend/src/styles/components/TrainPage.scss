@@ -37,13 +37,22 @@
   
 }
 
-.config-section label, .config-section select, .config-section input {
+.config-section label,.config-section input {
   display: block;
   width: 100%;
   margin-top: 0.5rem;
   padding: 0.5rem;
   border-radius: 8px;
   border: none;
+}
+.config-section select {
+  display: block;
+  width: 100%;
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  border-radius: 8px;
+  border: none;
+  background-color: #bec5c7;
 }
 .config-section-1 {
   background-color: #203a43;
@@ -53,7 +62,7 @@
   margin-top: 14rem;
 }
 
-.config-section-1 label, .config-section-1 select, .config-section-1 input {
+.config-section-1 label, .config-section-1 select {
   display: block;
   width: 100%;
   margin-top: 0.5rem;
@@ -62,7 +71,16 @@
   border: none;
   
 }
+.config-section-1 input{
+  display: block;
+  width: 100%;
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  border-radius: 8px;
+  border: none;
+  background-color: #bec5c7;
 
+}
 /* 3. Main Content Area */
 .main-content {
   flex-grow: 1;
@@ -147,21 +165,21 @@
 .button-container button {
   width: 100%;
   padding: 1rem;
-  background-image: linear-gradient(to right, #ff512f, #dd2476);
+  background-image: linear-gradient(45deg, #00897B, #26A69A);
   border: none;
   border-radius: 50px;
   color: #ffffff;
   font-weight: bold;
   font-size: 1.2rem;
   cursor: pointer;
-  box-shadow: 0 8px 25px rgba(255, 81, 47, 0.6);
+  
   transition: transform 0.3s ease, box-shadow 0.3s ease;
   margin-bottom: 2rem;
 }
 
 .button-container button:hover {
   transform: translateY(-5px);
-  box-shadow: 0 12px 35px rgba(255, 81, 47, 0.8);
+  box-shadow: 0 4px 15px rgba(0, 137, 123, 0.4);
 }
 
 /* 5. Responsive Design */

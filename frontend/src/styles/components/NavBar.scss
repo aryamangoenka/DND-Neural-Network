@@ -1,7 +1,8 @@
 /* Navbar Styles */
 
 .navbar {
-    background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+    background: linear-gradient(145deg, #1e1e2f, #252537);
+
     padding: 0.75rem 0;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
     border-bottom: 2px solid rgba(255, 255, 255, 0.1);
@@ -39,9 +40,9 @@
         }
 
         &.active {
-            background-color: #ff512f;
+            background-color: #225960;
             color: #ffffff !important;
-            box-shadow: 0 8px 20px rgba(255, 81, 47, 0.6);
+            
             transform: translateY(-5px);
         }
     }

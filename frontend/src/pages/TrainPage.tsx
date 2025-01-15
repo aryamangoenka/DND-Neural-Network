@@ -464,8 +464,8 @@ const TrainPage = (): JSX.Element => {
         {/* Configuration Section */}
         {/* Add your dataset, loss function, optimizer, hyperparameter inputs */}
         <div className="config-section">
-          <label>Dataset:</label>
-          <p>{dataset || "No dataset selected"}</p>
+          <label>Dataset: {dataset || "No dataset selected"}</label>
+          
         </div>
 
         <div className="config-section">

@@ -46,7 +46,7 @@ const ExportPage = (): JSX.Element => {
 
   return (
     <div className="container text-center mt-5">
-      <h1 className="mb-4">📤 Export Your Trained Model</h1>
+      <h1 className="mb-4 text-white">📤 Export Your Trained Model</h1>
       <p className="text-muted">
         <strong>Selected Dataset:</strong> {dataset}
       </p>
