@@ -7,7 +7,7 @@ A web-based tool that allows users to visually design, train, and export custom 
 - **Drag-and-Drop Interface:** Build custom neural networks by dragging and connecting different types of layers.
 - **Predefined Templates:** Quickly start with ready-made neural network templates for common tasks.
 - **Real-Time Training Visualization:** Monitor training progress with real-time graphs and logs.
-- **Export Options:** Export trained models in Python Script, Jupyter Notebook, HDF5, and TensorFlow formats.
+- **Export Options:** Export trained models in Python Script, Jupyter Notebook, TensorFlow SavedModel and Keras Model.
 - **Customizable Parameters:** Edit layer-specific parameters (neurons, activation functions, dropout rate, etc.).
 
 ## 🎯 Target Audience
@@ -133,6 +133,25 @@ npm run dev
   - **TensorFlow SavedModel**
   - **Keras Model** (`.h5`)
 - Download the model for further use or deployment.
+
+---
+
+## 🔮 Future Enhancements
+
+- **Custom Dataset Upload:** Enable users to upload their own datasets for model training.
+- **PyTorch Integration:** Allow users to export models in PyTorch format.
+- **Mobile Responsiveness:** Optimize the interface for mobile and tablet devices.
+- **Advanced Visualizations:** Add more in-depth training visualizations (e.g., ROC Curve, Precision-Recall Curve).
+- **Template Marketplace:** Introduce a marketplace for sharing and downloading user-created model templates.
+
+---
+
+## 🙏 Acknowledgments
+
+- **React Flow:** For providing the core drag-and-drop functionality.
+- **TensorFlow/Keras:** For model building and training.
+- **Flask-SocketIO:** For real-time communication.
+- Inspiration from existing neural network visual builders and educational tools.
 
 ---
 
