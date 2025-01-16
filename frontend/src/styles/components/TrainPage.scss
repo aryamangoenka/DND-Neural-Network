@@ -5,7 +5,7 @@
   display: flex;
   height: 100vh;
   width: 100vw;
-  background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+  background: #A8D0E6;
   color: #ffffff;
   overflow: hidden;
 }
@@ -13,7 +13,7 @@
 /* 2. Left Sidebar */
 .left-sidebar {
   width: 18%;
-  background-color: rgba(15, 32, 39, 0.95);
+  background-color: #374785;
   padding: 1.5rem 1rem;
   box-shadow: 2px 0 15px rgba(0, 0, 0, 0.7);
   overflow-y: auto;
@@ -30,7 +30,7 @@
 }
 
 .config-section {
-  background-color: #203a43;
+  background-color: #24305E;
   border-radius: 10px;
   padding: 1rem;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
@@ -55,7 +55,7 @@
   background-color: #bec5c7;
 }
 .config-section-1 {
-  background-color: #203a43;
+  background-color: #24305E;
   border-radius: 10px;
   padding: 1rem;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
@@ -85,7 +85,7 @@
 .main-content {
   flex-grow: 1;
   margin: 1rem;
-  background-color: #1b2b34;
+  background-color: #24305E;
   border-radius: 15px;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
   overflow-y: auto;
@@ -146,7 +146,7 @@
 /* 4. Right Sidebar */
 .right-sidebar {
   width: 18%;
-  background-color: rgba(15, 32, 39, 0.95);
+  background-color: #374785;
   padding: 1.5rem 1rem;
   box-shadow: -2px 0 15px rgba(0, 0, 0, 0.7);
   overflow-y: auto;
@@ -162,10 +162,10 @@
   letter-spacing: 1.5px;
 }
 
-.button-container button {
+.button-container button{
   width: 100%;
   padding: 1rem;
-  background-image: linear-gradient(45deg, #00897B, #26A69A);
+  background-color: #f76c6c !important ;
   border: none;
   border-radius: 50px;
   color: #ffffff;
@@ -176,11 +176,11 @@
   transition: transform 0.3s ease, box-shadow 0.3s ease;
   margin-bottom: 2rem;
 }
-
 .button-container button:hover {
   transform: translateY(-5px);
   box-shadow: 0 4px 15px rgba(0, 137, 123, 0.4);
 }
+
 
 /* 5. Responsive Design */
 @media (max-width: 1024px) {
@@ -215,7 +215,7 @@
   max-width: 800px;
   margin: 20px auto;
   padding: 10px;
-  background-color: #ffffff;
+  
   border: 2px solid #ccc;
   border-radius: 10px;
   box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);

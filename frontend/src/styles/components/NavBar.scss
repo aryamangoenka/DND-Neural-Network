@@ -1,11 +1,11 @@
 /* Navbar Styles */
 
 .navbar {
-    background: linear-gradient(145deg, #1e1e2f, #252537);
+    background: #A8D0E6;
 
     padding: 0.75rem 0;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
-    border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+    
+    
     position: sticky;
     top: 0;
     z-index: 1000;
@@ -40,7 +40,7 @@
         }
 
         &.active {
-            background-color: #225960;
+            background-color: #f76c6c;
             color: #ffffff !important;
             
             transform: translateY(-5px);

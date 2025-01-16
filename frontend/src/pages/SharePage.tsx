@@ -46,14 +46,14 @@ const ExportPage = (): JSX.Element => {
 
   return (
     <div className="container text-center mt-5">
-      <h1 className="mb-4 text-white">📤 Export Your Trained Model</h1>
+      <h1 className="mb-4 text-dark">📤 Export Your Trained Model</h1>
       <p className="text-muted">
         <strong>Selected Dataset:</strong> {dataset}
       </p>
 
       <div className="d-flex justify-content-center gap-3 mt-4">
         <button
-          className="btn btn-outline-primary"
+          className="btn btn-primary"
           onClick={() => handleExport("py")}
           
         >
@@ -61,7 +61,7 @@ const ExportPage = (): JSX.Element => {
         </button>
 
         <button
-          className="btn btn-outline-success"
+          className="btn btn-success"
           onClick={() => handleExport("ipynb")}
           
         >
@@ -69,7 +69,7 @@ const ExportPage = (): JSX.Element => {
         </button>
 
         <button
-          className="btn btn-outline-warning"
+          className="btn btn-warning"
           onClick={() => handleExport("savedmodel")}
           
         >
@@ -77,7 +77,7 @@ const ExportPage = (): JSX.Element => {
         </button>
 
         <button
-          className="btn btn-outline-danger"
+          className="btn btn-danger"
           onClick={() => handleExport("keras")}
           
         >

@@ -58,7 +58,7 @@ const HomePage = ({}: HomePageProps) => {
                     className="btn btn-secondary btn-lg proceed-button"
                     onClick={handleDatasetSelect}
                 >
-                    🚀 Proceed
+                    Proceed
                 </button>
             </div>
         </div>

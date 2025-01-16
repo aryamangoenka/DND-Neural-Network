@@ -5,7 +5,7 @@
   display: flex;
   height: 100vh;
   width: 100vw;
-  background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+  background: #A8D0E6;
   color: #ffffff;
   overflow: hidden;
 }
@@ -13,13 +13,14 @@
 /* 2. Left Sidebar */
 .left-sidebar {
   width: 18%;
-  background-color: rgba(15, 32, 39, 0.95);
+  background-color: #374785!important;
   padding: 1.5rem 1rem;
   box-shadow: 2px 0 15px rgba(0, 0, 0, 0.7);
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  border-radius: 0 15px;
 }
 
 .left-sidebar h2 {
@@ -30,7 +31,7 @@
 }
 
 .layer-card {
-  background-color: #203a43;
+  background-color: #A8D0E6;
   border-radius: 10px;
   padding: 0.8rem 1rem;
   display: flex;
@@ -38,6 +39,8 @@
   align-items: center;
   cursor: pointer;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
+  font-weight: 600;
+  color:black;
 }
 
 .layer-card:hover {
@@ -47,7 +50,7 @@
 
 .layer-card button {
   padding: 0.4rem 0.8rem;
-  background: linear-gradient(45deg, #9D00FF, #B44AF1);
+  background: #f76c6c;
   border: none;
   border-radius: 20px;
   color: #ffffff;
@@ -61,7 +64,7 @@
 }
 /* Templates Section */
 .templates-section {
-  background-color: #203a43;
+  
   padding: 1rem;
   border-radius: 10px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
@@ -70,10 +73,10 @@
 .templates-section button {
   width: 100%;
   padding: 0.8rem;
-  background-image: linear-gradient(45deg, #00F5A0, #00D9F5);
+  background-color: #A8D0E6;
   border: none;
   border-radius: 25px;
-  color: #1d1b1b;
+  color:black;
   font-weight: bold;
   cursor: pointer;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
@@ -91,7 +94,7 @@
 .canvas {
   flex-grow: 1;
   margin: 1rem;
-  background-color: #1b2b34;
+  background-color: #24305E;
   border-radius: 15px;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
   overflow: hidden;
@@ -100,13 +103,14 @@
 /* 4. Right Sidebar */
 .right-sidebar {
   width: 18%;
-  background-color: rgba(15, 32, 39, 0.95);
+  background-color: #374785 !important;
   padding: 1.5rem 1rem;
   box-shadow: 0 4px 15px rgba(0, 137, 123, 0.4);
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 2rem;
+  border-radius:  15px 0;
 }
 
 .right-sidebar h2 {
@@ -135,7 +139,7 @@
 
 /* 5. Parameters Section */
 .parameters-section {
-  background-color: #203a43;
+  background-color: #24305E;
   padding: 1.5rem;
   border-radius: 10px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
@@ -161,11 +165,11 @@
 .train-button {
   width: 100%;
   padding: 1rem;
-  background-image: linear-gradient(to right, #ff512f, #dd2476);
+  background: #f76c6c !important;
   border: none;
   border-radius: 50px;
-  color: #ffffff;
-  font-weight: bold;
+  color: #ffffff !important;
+  font-weight: 500;
   font-size: 1.2rem;
   cursor: pointer;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
@@ -195,6 +199,7 @@
     width: 100%;
     height: auto;
     box-shadow: none;
+    
   }
 
   .canvas {

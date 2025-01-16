@@ -60,7 +60,7 @@ Developing neural networks can be complex and time-consuming, especially for beg
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/dnd-neural-network.git
+git clone https://github.com/aryamangoenka/dnd-neural-network.git
 cd dnd-neural-network
 
 # Create and activate a virtual environment
@@ -94,7 +94,7 @@ npm run dev
 ### 4. **Access the Application**
 
 - Open your browser and navigate to `http://localhost:3000` to access the frontend.
-- The backend API will run on `http://localhost:5000` by default.
+- The backend API will run on `http://localhost:5173` by default.
 
 ### 5. **Common Issues & Fixes**
 
@@ -122,7 +122,7 @@ npm run dev
 
 ### 4. **Train the Model**
 - Click the **Train** button.
-- Monitor real-time progress through **Loss** and **Accuracy** graphs.
+- Monitor real-time progress through **interactive** graphs.
 - View logs and metrics during the training process.
 
 ### 5. **Export the Trained Model**

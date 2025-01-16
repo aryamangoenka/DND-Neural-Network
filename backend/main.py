@@ -485,8 +485,17 @@ def export_model(format):
         return jsonify({"error": str(e)}), 500
 
 def generate_python_script(model, training_config, x_train_shape):
+
+    LOSS_FUNCTION_MAPPING = {
+        "Categorical Cross-Entropy": "categorical_crossentropy",
+        "Binary Cross-Entropy": "binary_crossentropy",
+        "Mean Squared Error": "mse",
+        "Mean Absolute Error": "mae",
+        "Huber Loss": "huber"
+    }
     optimizer = training_config.get("optimizer", "adam").lower()
-    loss_function = training_config.get("lossFunction", "categorical_crossentropy").lower()
+    loss_function_init = training_config.get("lossFunction", "Categorical Cross-Entropy")
+    loss_function=LOSS_FUNCTION_MAPPING.get(loss_function_init)
     batch_size = training_config.get("batchSize", 32)
     epochs = training_config.get("epochs", 10)
     dataset_name = training_config.get("dataset", "").lower()
@@ -588,11 +597,12 @@ y_test = to_categorical(y_test, 10)
 
     # Generate model layers code
     layers_code = ""
+    layers_code+=f"Input(shape={x_train_shape}),\n"
     for i, layer in enumerate(model.layers):
         config = layer.get_config()
         if isinstance(layer, Dense):
-            input_shape_arg = f"input_shape={x_train_shape}" if i == 0 else ""
-            layers_code += f"Dense({config['units']}, activation='{config['activation']}'{', ' + input_shape_arg if input_shape_arg else ''}),\n"
+            
+            layers_code += f"Dense({config['units']}, activation='{config['activation']}'),\n"
         elif isinstance(layer, Conv2D):
             layers_code += f"Conv2D({config['filters']}, {config['kernel_size']}, activation='{config['activation']}'),\n"
         elif isinstance(layer, Flatten):
@@ -608,7 +618,7 @@ y_test = to_categorical(y_test, 10)
     return f"""
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Conv2D, Flatten, Dropout, MaxPooling2D, BatchNormalization
+from tensorflow.keras.layers import Dense, Conv2D, Flatten, Dropout, MaxPooling2D, BatchNormalization, Input
 
 # Dataset preprocessing
 {preprocessing_code}
@@ -638,8 +648,16 @@ model.save('trained_model.keras')
 
 
 def generate_notebook(model, training_config, x_train_shape):
+    LOSS_FUNCTION_MAPPING = {
+        "Categorical Cross-Entropy": "categorical_crossentropy",
+        "Binary Cross-Entropy": "binary_crossentropy",
+        "Mean Squared Error": "mse",
+        "Mean Absolute Error": "mae",
+        "Huber Loss": "huber"
+    }
     optimizer = training_config.get("optimizer", "adam").lower()
-    loss_function = training_config.get("lossFunction", "categorical_crossentropy").lower()
+    loss_function_init = training_config.get("lossFunction", "Categorical Cross-Entropy")
+    loss_function=LOSS_FUNCTION_MAPPING.get(loss_function_init)
     batch_size = training_config.get("batchSize", 32)
     epochs = training_config.get("epochs", 10)
     dataset_name = training_config.get("dataset", "").lower()
@@ -742,11 +760,12 @@ y_test = to_categorical(y_test, 10)
 
         # Generate model layers code
     layers_code = ""
+    layers_code+=f"Input(shape={x_train_shape}),\n"
     for i, layer in enumerate(model.layers):
         config = layer.get_config()
+        
         if isinstance(layer, Dense):
-            input_shape_arg = f"input_shape={x_train_shape}" if i == 0 else ""
-            layers_code += f"Dense({config['units']}, activation='{config['activation']}'{', ' + input_shape_arg if input_shape_arg else ''}),\n"
+            layers_code += f"Dense({config['units']}, activation='{config['activation']}'),\n"
         elif isinstance(layer, Conv2D):
             layers_code += f"Conv2D({config['filters']}, {config['kernel_size']}, activation='{config['activation']}'),\n"
         elif isinstance(layer, Flatten):
@@ -757,6 +776,8 @@ y_test = to_categorical(y_test, 10)
             layers_code += f"MaxPooling2D(pool_size={config['pool_size']}),\n"
         elif isinstance(layer, BatchNormalization):
             layers_code += "BatchNormalization(),\n"
+        
+            
 
     notebook_content = {
         "cells": [
@@ -766,7 +787,7 @@ y_test = to_categorical(y_test, 10)
                 "source": [
                     "import tensorflow as tf\n",
                     "from tensorflow.keras.models import Sequential\n",
-                    "from tensorflow.keras.layers import Dense, Conv2D, Flatten, Dropout, MaxPooling2D, BatchNormalization\n\n",
+                    "from tensorflow.keras.layers import Dense, Conv2D, Flatten, Dropout, MaxPooling2D, BatchNormalization, Input\n\n",
                     f"{preprocessing_code}\n\n",
                     "# Define the model\n",
                     "model = Sequential([\n",

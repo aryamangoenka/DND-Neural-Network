@@ -617,7 +617,7 @@ const TrainPage = (): JSX.Element => {
         <h2>Training Status</h2>
         <div className="button-container">
           <button
-            className="start-button"
+            className="button"
             onClick={handleTrain}
             disabled={isTraining}
           >

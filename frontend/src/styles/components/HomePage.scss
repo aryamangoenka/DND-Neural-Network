@@ -6,7 +6,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    background: linear-gradient(145deg, #1e1e2f, #252537);
+    background: #A8D0E6;
 
 
     overflow: hidden;
@@ -22,21 +22,23 @@
   /* 2. Title Styling */
   .home-title {
     font-size: 5rem;
-    font-weight: 900;
+    font-weight: 300;
     color: #ffffff;
-    text-shadow: 3px 3px 25px rgba(0, 0, 0, 0.8);
+    
     margin-bottom: 1rem;
     animation: fadeInDown 1s ease-out;
     letter-spacing: 3px;
     text-transform: uppercase;
+    font-family: "georgia"
   }
   
   .home-subtitle {
     font-size: 1.8rem;
-    color: #d1e3ff;
+    color: #374785;
     margin-bottom: 3rem;
     animation: fadeInUp 1.2s ease-out;
     letter-spacing: 1px;
+    font-weight:900;
   }
   
   /* 3. Custom Dropdown Styling */
@@ -99,10 +101,10 @@
     font-size: 1.4rem;
     border-radius: 50px;
     border: none;
-    background-image: linear-gradient(to right, #ff512f, #dd2476);
+    background: #f76c6c !important;
     color: #fff;
     cursor: pointer;
-    box-shadow: 0 8px 25px rgba(255, 81, 47, 0.6);
+    
     transition: transform 0.3s ease, box-shadow 0.3s ease;
     text-transform: uppercase;
     letter-spacing: 2px;
@@ -110,7 +112,7 @@
   
   .proceed-button:hover {
     transform: translateY(-5px);
-    box-shadow: 0 12px 35px rgba(255, 81, 47, 0.8);
+    
   }
   
   /* 5. Animations */
