@@ -88,7 +88,7 @@ const TrainPage = (): JSX.Element => {
     setChartKey((prev) => prev + 1); // Clear previous val accuracy data
 
     setPredictedValues([]);
-
+    setHeatmapImage("")
     setResidualsChartData({ datasets: [] });
     setResiduals([]);
     setLabels([]); // Clear epoch labels
@@ -220,7 +220,7 @@ const TrainPage = (): JSX.Element => {
       {
         label: "Loss",
         data: lossData,
-        borderColor: "rgba(255, 99, 132, 1)",
+        borderColor: "#FF7043",
         backgroundColor: "rgba(255, 99, 132, 0.2)",
         fill: true,
         tension: 0.4,
@@ -228,7 +228,7 @@ const TrainPage = (): JSX.Element => {
       {
         label: "Validation Loss",
         data: valLossData,
-        borderColor: "rgba(54, 162, 235, 1)",
+        borderColor: "#29B6F6",
         backgroundColor: "rgba(54, 162, 235, 0.2)",
         fill: true,
         tension: 0.4,
@@ -346,7 +346,7 @@ const TrainPage = (): JSX.Element => {
           margin: "20px auto",
           overflow: "auto",
           padding: "10px",
-          backgroundColor: "#ffffff",
+          backgroundColor: "#F0F4F8",
           border: "2px solid #ccc",
           borderRadius: "10px",
           boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.2)",
@@ -374,7 +374,7 @@ const TrainPage = (): JSX.Element => {
                     fontWeight: "bold",
                     textAlign: "center",
                     backgroundColor: "#4ade80",
-                    color: "#ffffff",
+                    color: "#e9eade",
                     border: "1px solid #ddd",
                   }}
                 >
@@ -392,7 +392,7 @@ const TrainPage = (): JSX.Element => {
                     fontWeight: "bold",
                     textAlign: "center",
                     backgroundColor: "#4ade80",
-                    color: "#ffffff",
+                    color: "#e9eade",
                     border: "1px solid #ddd",
                     padding: "10px",
                     whiteSpace: "nowrap",
@@ -465,7 +465,6 @@ const TrainPage = (): JSX.Element => {
         {/* Add your dataset, loss function, optimizer, hyperparameter inputs */}
         <div className="config-section">
           <label>Dataset: {dataset || "No dataset selected"}</label>
-          
         </div>
 
         <div className="config-section">
@@ -499,10 +498,9 @@ const TrainPage = (): JSX.Element => {
       </div>
 
       <div className="main-content">
-        <h2 style={{ textAlign: "center" }}>Training Visualization</h2>
         <div className="progress-bar">
           <div
-            className="progress-bar-fill"
+            className="progress-bar-fill text-light"
             style={{ width: `${trainingProgress}%` }}
           >
             {trainingProgress.toFixed(2)}%
@@ -534,7 +532,9 @@ const TrainPage = (): JSX.Element => {
                   labels={getClassLabels(dataset)}
                 />
               ) : (
-                <p>Confusion matrix is not available yet.</p>
+                <p style={{ color: "grey" }}>
+                  Confusion matrix is not available yet.
+                </p>
               )}
             </div>
           )}
@@ -545,15 +545,14 @@ const TrainPage = (): JSX.Element => {
           {dataset === "California Housing" && (
             <div className="cali-visualizations">
               <div className="charts-row">
-              {/* Smaller Loss Graph on Top */}
-              <div className="loss-chart-wrapper">
-                <div className="chart-small">
-                  <h3>Loss Over Time</h3>
-                  <Line data={lossChartData} options={chartOptions} />
+                {/* Smaller Loss Graph on Top */}
+                <div className="loss-chart-wrapper">
+                  <div className="chart-small">
+                    <h3>Loss Over Time</h3>
+                    <Line data={lossChartData} options={chartOptions} />
+                  </div>
                 </div>
-              </div>
-              <div className="residuals-chart-wrapper">
-                
+                <div className="residuals-chart-wrapper">
                   <h4>Residuals Plot</h4>
                   {residualsChartData ? (
                     <Line
@@ -588,9 +587,8 @@ const TrainPage = (): JSX.Element => {
                     <p>Residuals Plot not available.</p>
                   )}
                 </div>
-                </div>
+              </div>
 
-              
               <div className="regression-charts-container">
                 <div className="chart-wrapper">
                   <h4>Multicollinearity Heatmap</h4>
@@ -606,7 +604,6 @@ const TrainPage = (): JSX.Element => {
                     )}
                   </div>
                 </div>
-                
               </div>
             </div>
           )}
@@ -623,16 +620,20 @@ const TrainPage = (): JSX.Element => {
           >
             {isTraining ? "Training..." : "Start Training"}
           </button>
-
-          <p>Batch Progress: {trainingProgress.toFixed(2)}%</p>
-          <p>Loss: {liveMetrics.loss?.toFixed(6) || "N/A"}
-          <p>Validation Loss: {liveMetrics.val_loss?.toFixed(6) || "N/A"}</p></p>
+          <div style={{ fontWeight: 600 }}>
+            <p>Batch Progress: {trainingProgress.toFixed(2)}%</p>
+            <p>Loss: {liveMetrics.loss?.toFixed(6) || "N/A"}</p>
+            <p>Validation Loss: {liveMetrics.val_loss?.toFixed(6) || "N/A"}</p>
+          </div>
           {dataset !== "California Housing" && (
-            <p>Accuracy: {liveMetrics.accuracy?.toFixed(6) || "N/A"}
+            <div style={{ fontWeight: 600 }}>
+              <p>Accuracy: {liveMetrics.accuracy?.toFixed(6) || "N/A"}</p>
 
-            <p>Validation Accuracy: {liveMetrics.val_accuracy?.toFixed(6) || "N/A"}</p>
-            </p>
-            
+              <p>
+                Validation Accuracy:{" "}
+                {liveMetrics.val_accuracy?.toFixed(6) || "N/A"}
+              </p>
+            </div>
           )}
           {dataset === "California Housing" && (
             <>

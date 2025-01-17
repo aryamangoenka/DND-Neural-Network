@@ -36,7 +36,7 @@ const HomePage = ({}: HomePageProps) => {
     return (
         <div className="container-fluid">
             <div className="hero-section">
-                <h1 className="home-title">🚀 Build. Train. Share.</h1>
+                <h1 className="home-title">🚀 Build. Train. Deploy.</h1>
                 <p className="home-subtitle">An Interactive Drag-and-Drop Neural Network Builder</p>
 
                 <div className="dropdown-wrapper">

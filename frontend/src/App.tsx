@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import HomePage from "./pages/HomePage";
 import BuildPage from "./pages/BuildPage";
 import TrainPage from "./pages/TrainPage";
-import SharePage from "./pages/SharePage";
+import DeployPage from "./pages/DeployPage";
 import NavBar from "./components/NavBar";
 import axios from "axios";
 import { useEffect } from "react";
@@ -30,7 +30,7 @@ const AppContent: React.FC = () => {
                 <Route path="/" element={<HomePage />} />
                 <Route path="/build" element={<BuildPage />} />
                 <Route path="/train" element={<TrainPage />} />
-                <Route path="/share" element={<SharePage />} />
+                <Route path="/deploy" element={<DeployPage />} />
             </Routes>
         </div>
     );

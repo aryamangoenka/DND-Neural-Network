@@ -1,12 +1,12 @@
 import { useState } from "react";
 import axios from "axios";
-import "../styles/components/SharePage.scss";
-import { useDataset } from "../context/DatasetContext";
+import "../styles/components/DeployPage.scss";
+
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { useTrainPageContext } from "../context/TrainPageContext";
 
-const ExportPage = (): JSX.Element => {
-  const dataset: string = useDataset()?.dataset || "Unknown";
+const DeployPage = (): JSX.Element => {
+  
   const [statusMessage, setStatusMessage] = useState<string>("");
   
   const { modelTrained } = useTrainPageContext();
@@ -45,11 +45,11 @@ const ExportPage = (): JSX.Element => {
   };
 
   return (
-    <div className="container text-center mt-5">
-      <h1 className="mb-4 text-dark">📤 Export Your Trained Model</h1>
-      <p className="text-muted">
-        <strong>Selected Dataset:</strong> {dataset}
-      </p>
+    <div className="container fluid">
+      <div className="hero-section">
+                      <h1 className="home-title"> Ready to Launch?</h1>
+      <h1 className="home-subtitle">📤 Turn your hard work into deployable models!</h1>
+
 
       <div className="d-flex justify-content-center gap-3 mt-4">
         <button
@@ -90,8 +90,9 @@ const ExportPage = (): JSX.Element => {
           {statusMessage}
         </div>
       )}
+      </div>
     </div>
   );
 };
 
-export default ExportPage;
+export default DeployPage;

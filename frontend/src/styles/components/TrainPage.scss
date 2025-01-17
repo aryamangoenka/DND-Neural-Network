@@ -30,7 +30,7 @@
 }
 
 .config-section {
-  background-color: #24305E;
+  background-color: #374785;
   border-radius: 10px;
   padding: 1rem;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
@@ -52,10 +52,10 @@
   padding: 0.5rem;
   border-radius: 8px;
   border: none;
-  background-color: #bec5c7;
+  background-color: #ffffff;
 }
 .config-section-1 {
-  background-color: #24305E;
+  background-color: #374785;
   border-radius: 10px;
   padding: 1rem;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
@@ -78,14 +78,14 @@
   padding: 0.5rem;
   border-radius: 8px;
   border: none;
-  background-color: #bec5c7;
+  background-color: #ffffff;
 
 }
 /* 3. Main Content Area */
 .main-content {
   flex-grow: 1;
   margin: 1rem;
-  background-color: #24305E;
+  background-color: #E3F2FD;
   border-radius: 15px;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
   overflow-y: auto;
@@ -102,7 +102,7 @@
 
 .progress-bar-fill {
   height: 1.5rem;
-  background-image: linear-gradient(to right, #258a42, #1de919);
+  background: #f76c6c;
   transition: width 0.5s ease-in-out;
   text-align: center;
   color: #fff;
@@ -124,18 +124,19 @@
 .chart-small {
   width: 550px;   /* ✅ Same width for all */
   height: 400px;  /* ✅ Same height for all */
-  background-color: #e9eade;
+  background-color: #F0F4F8;
   padding: 1rem;
   border-radius: 10px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
   margin-bottom: 1.5rem;
   color:#0f2027;
+  
 }
 /* Residual Plot Specific Styling */
 .residuals-chart-wrapper {
   width: 600px;   /* Keep width same as Loss Graph */
   height: 400px;  /* Reduced height */
-  background-color: #e9eade;
+  background-color: #F0F4F8;
   padding: 1rem;
   border-radius: 10px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
@@ -168,7 +169,7 @@
   background-color: #f76c6c !important ;
   border: none;
   border-radius: 50px;
-  color: #ffffff;
+  color: #e9eade;
   font-weight: bold;
   font-size: 1.2rem;
   cursor: pointer;
@@ -230,7 +231,7 @@
 
 .chart-wrapper {
   flex: 1;
-  background-color: #e9eade;
+  background-color: #F0F4F8;
   padding: 1rem;
   border-radius: 10px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
@@ -240,3 +241,4 @@
 .loss-chart-wrapper {
   margin-bottom: 1.5rem;
 }
+

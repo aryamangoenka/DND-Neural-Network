@@ -125,13 +125,13 @@ npm run dev
 - Monitor real-time progress through **interactive** graphs.
 - View logs and metrics during the training process.
 
-### 5. **Export the Trained Model**
+### 5. **Share the Trained Model**
 - Once training is complete, go to the **Export Page**.
 - Choose from multiple export formats:
   - **Python Script** (`.py`)
   - **Jupyter Notebook** (`.ipynb`)
   - **TensorFlow SavedModel**
-  - **Keras Model** (`.h5`)
+  - **Keras Model** (`.keras`)
 - Download the model for further use or deployment.
 
 ---
