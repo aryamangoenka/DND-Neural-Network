@@ -125,8 +125,8 @@ npm run dev
 - Monitor real-time progress through **interactive** graphs.
 - View logs and metrics during the training process.
 
-### 5. **Share the Trained Model**
-- Once training is complete, go to the **Export Page**.
+### 5. **Deploy the Trained Model**
+- Once training is complete, go to the **Deploy Page**.
 - Choose from multiple export formats:
   - **Python Script** (`.py`)
   - **Jupyter Notebook** (`.ipynb`)
