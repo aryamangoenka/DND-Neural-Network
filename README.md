@@ -151,6 +151,7 @@ npm run dev
 - **React Flow:** For providing the core drag-and-drop functionality.
 - **TensorFlow/Keras:** For model building and training.
 - **Flask-SocketIO:** For real-time communication.
+- I would like to thank My Prof. Cooper Sigrist for his mentorship and guidance in this project
 - Inspiration from existing neural network visual builders and educational tools.
 
 ---
