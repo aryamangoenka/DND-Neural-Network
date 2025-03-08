@@ -5,30 +5,34 @@ from tensorflow.keras.layers import Dense, Conv2D, Flatten, Dropout, MaxPooling2
 
 # Dataset preprocessing
 
-from sklearn.datasets import load_breast_cancer
+from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
 
-# Load Breast Cancer dataset
-data = load_breast_cancer()
+# Load Iris dataset
+data = load_iris()
 X, y = data.data, data.target
 
 # Standardize features
 scaler = StandardScaler()
 X = scaler.fit_transform(X)
 
+# One-hot encode labels
+encoder = OneHotEncoder(sparse_output=False)
+y = encoder.fit_transform(y.reshape(-1, 1))
+
 # Split data
-x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
+x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
 
 # Define the model
 model = Sequential([
-    Input(shape=(30,)),
-Dense(1111, activation='relu'),
-Dense(1, activation='sigmoid'),
+    Input(shape=(4,)),
+Dense(64, activation='relu'),
+Dense(3, activation='softmax'),
 ])
 
-model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
 # Train the model
 model.fit(x_train, y_train, epochs=10, batch_size=32, validation_split=0.2)

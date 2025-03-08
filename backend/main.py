@@ -399,6 +399,7 @@ def build_model_from_architecture(architecture, input_shape,dataset_name):
         activation=activation# Use user-defined activation
     ))
     print(model.summary())
+    print(model.layers)
      
     return model
     
@@ -427,6 +428,13 @@ def determine_output_units(dataset_name):
 
 # Existing imports and app setup remain unchanged...
 
+# ✅ Load the trained Keras model
+keras_model = tf.keras.models.load_model(TRAINED_MODEL_PATH)
+
+import torch
+import torch.nn as nn
+import torch.optim as optim
+import tensorflow as tf
 
 
 
@@ -477,6 +485,18 @@ def export_model(format):
             file_path = os.path.join(EXPORT_FOLDER, "trained_model.keras")
             model.save(file_path)
             return send_file(file_path, as_attachment=True)
+        
+        elif format == "pytorch":
+            # 🔥 Convert Keras model to PyTorch manually
+            pytorch_script = generate_pytorch_script(model, latest_training_config, x_train_shape)
+
+            # ✅ Save to a file
+            file_path = os.path.join(EXPORT_FOLDER, "trained_model_pytorch.py")
+            with open(file_path, "w") as f:
+                f.write(pytorch_script)
+
+            return send_file(file_path, as_attachment=True)
+            
 
         else:
             return jsonify({"error": f"Unsupported format: {format}"}), 400
@@ -807,6 +827,211 @@ y_test = to_categorical(y_test, 10)
     }
 
     return json.dumps(notebook_content)
+
+def generate_pytorch_script(model, training_config, x_train_shape):
+    """
+    Generates a PyTorch script equivalent to the trained Keras model.
+    """
+    optimizer = training_config.get("optimizer", "adam").lower()
+    loss_function = training_config.get("lossFunction", "categorical_crossentropy")
+    batch_size = training_config.get("batchSize", 32)
+    epochs = training_config.get("epochs", 10)
+    dataset_name = training_config.get("dataset", "").lower()
+
+    pytorch_code = f"""
+import torch
+import torch.nn as nn
+import torch.optim as optim
+import torch.nn.functional as F
+
+class PyTorchModel(nn.Module):
+    def __init__(self):
+        super(PyTorchModel, self).__init__()
+        self.layers = nn.Sequential(
+    """
+
+    # ✅ Convert each layer dynamically
+    for layer in model.layers:
+        config = layer.get_config()
+
+        if isinstance(layer, tf.keras.layers.Dense):
+            pytorch_code += f"\n            nn.Linear({config['input_shape'][-1]}, {config['units']}),"
+            if config["activation"] == "relu":
+                pytorch_code += "\n            nn.ReLU(),"
+            elif config["activation"] == "sigmoid":
+                pytorch_code += "\n            nn.Sigmoid(),"
+            elif config["activation"] == "softmax":
+                pytorch_code += "\n            nn.Softmax(dim=1),"
+            elif config["activation"] == "tanh":
+                pytorch_code += "\n            nn.Tanh(),"
+
+        elif isinstance(layer, tf.keras.layers.Conv2D):
+            filters = config["filters"]
+            kernel_size = config["kernel_size"]
+            strides = config["strides"]
+            input_channels = x_train_shape[0] if len(x_train_shape) == 3 else 1
+            pytorch_code += f"\n            nn.Conv2d({input_channels}, {filters}, kernel_size={kernel_size}, stride={strides}),"
+            pytorch_code += "\n            nn.ReLU(),"
+
+        elif isinstance(layer, tf.keras.layers.MaxPooling2D):
+            pool_size = config["pool_size"]
+            pytorch_code += f"\n            nn.MaxPool2d(kernel_size={pool_size}),"
+
+        elif isinstance(layer, tf.keras.layers.Flatten):
+            pytorch_code += "\n            nn.Flatten(),"
+
+        elif isinstance(layer, tf.keras.layers.Dropout):
+            rate = config["rate"]
+            pytorch_code += f"\n            nn.Dropout({rate}),"
+
+        elif isinstance(layer, tf.keras.layers.BatchNormalization):
+            pytorch_code += "\n            nn.BatchNorm1d(),"
+
+    pytorch_code += "\n        )\n\n"
+
+    # ✅ Define `forward()` method
+    pytorch_code += """
+    def forward(self, x):
+        return self.layers(x)
+"""
+
+    # ✅ Add dataset loading logic
+    dataset_code = get_dataset_code(dataset_name)
+
+    # ✅ Add training loop
+    pytorch_code += f"""
+{dataset_code}
+
+# Initialize model
+model = PyTorchModel()
+
+# Define loss and optimizer
+criterion = nn.CrossEntropyLoss()
+optimizer = optim.Adam(model.parameters(), lr=0.001)
+
+# Train model
+for epoch in range({epochs}):
+    for images, labels in train_loader:
+        optimizer.zero_grad()
+        output = model(images)
+        loss = criterion(output, labels)
+        loss.backward()
+        optimizer.step()
+
+print("Training complete!")
+
+# Save PyTorch model
+torch.save(model.state_dict(), "trained_model.pth")
+print("Model saved as trained_model.pth")
+"""
+
+    return pytorch_code
+
+def get_dataset_code(dataset_name):
+    """
+    Returns dataset loading code for PyTorch based on the dataset used.
+    """
+    if dataset_name == "mnist":
+        return """
+# Load dataset
+import torch.utils.data as data
+from torchvision import datasets, transforms
+
+transform = transforms.Compose([transforms.ToTensor()])
+
+train_loader = data.DataLoader(datasets.MNIST(root='./data', train=True, download=True, transform=transform), batch_size=32, shuffle=True)
+test_loader = data.DataLoader(datasets.MNIST(root='./data', train=False, download=True, transform=transform), batch_size=32, shuffle=False)
+"""
+    elif dataset_name == "cifar-10":
+        return """
+# Load dataset
+import torch.utils.data as data
+from torchvision import datasets, transforms
+
+transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5,), (0.5,))])
+
+train_loader = data.DataLoader(datasets.CIFAR10(root='./data', train=True, download=True, transform=transform), batch_size=32, shuffle=True)
+test_loader = data.DataLoader(datasets.CIFAR10(root='./data', train=False, download=True, transform=transform), batch_size=32, shuffle=False)
+"""
+    elif dataset_name == "iris":
+        return """
+from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+import torch
+
+# Load dataset
+data = load_iris()
+X, y = data.data, data.target
+
+# Standardize features
+scaler = StandardScaler()
+X = scaler.fit_transform(X)
+
+# Convert to PyTorch tensors
+X = torch.tensor(X, dtype=torch.float32)
+y = torch.tensor(y, dtype=torch.long)
+
+# Split data
+x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+train_loader = [(x_train[i], y_train[i]) for i in range(len(x_train))]
+test_loader = [(x_test[i], y_test[i]) for i in range(len(x_test))]
+"""
+    elif dataset_name == "breast cancer":
+        return """
+from sklearn.datasets import load_breast_cancer
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+import torch
+
+# Load dataset
+data = load_breast_cancer()
+X, y = data.data, data.target
+
+# Standardize features
+scaler = StandardScaler()
+X = scaler.fit_transform(X)
+
+# Convert to PyTorch tensors
+X = torch.tensor(X, dtype=torch.float32)
+y = torch.tensor(y, dtype=torch.long)
+
+# Split data
+x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+train_loader = [(x_train[i], y_train[i]) for i in range(len(x_train))]
+test_loader = [(x_test[i], y_test[i]) for i in range(len(x_test))]
+"""
+
+    elif dataset_name == "california housing":
+        return """
+from sklearn.datasets import fetch_california_housing
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+import torch
+
+# Load dataset
+data = fetch_california_housing()
+X, y = data.data, data.target
+
+# Standardize features
+scaler = StandardScaler()
+X = scaler.fit_transform(X)
+
+# Convert to PyTorch tensors
+X = torch.tensor(X, dtype=torch.float32)
+y = torch.tensor(y, dtype=torch.float32).view(-1, 1)  # Regression task, so keep y as float
+
+# Split data
+x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Create DataLoader for PyTorch
+train_loader = [(x_train[i], y_train[i]) for i in range(len(x_train))]
+test_loader = [(x_test[i], y_test[i]) for i in range(len(x_test))]
+"""
+    else:
+        return "# ❌ Dataset not supported for PyTorch yet."
 
 
 
