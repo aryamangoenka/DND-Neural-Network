@@ -92,7 +92,7 @@ const DeployPage = (): JSX.Element => {
           </button>
 
           <button
-            className="btn btn-warning"
+            className="btn btn-info"
             onClick={() => handleExport("pytorch")}
           >
             🔄 Export as Pytorch

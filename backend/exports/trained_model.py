@@ -28,7 +28,7 @@ x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 # Define the model
 model = Sequential([
     Input(shape=(4,)),
-Dense(64, activation='relu'),
+Dense(128, activation='relu'),
 Dense(3, activation='softmax'),
 ])
 
