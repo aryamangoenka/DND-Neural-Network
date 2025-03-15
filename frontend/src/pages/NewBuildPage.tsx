@@ -220,7 +220,6 @@ const NewBuildPage: React.FC = () => {
     const defaultOptions = [
       { value: "accuracy", label: "Accuracy" },
       { value: "loss", label: "Loss" },
-      { value: "model_structure", label: "Model Structure" },
     ];
 
     // Dataset-specific options that are currently supported
@@ -1701,29 +1700,6 @@ const NewBuildPage: React.FC = () => {
                   <p>Start training to see loss metrics</p>
                 </div>
               )}
-            </div>
-          </div>
-        );
-      case "model_structure":
-        return (
-          <div className="visualization-container">
-            <h4>Model Structure</h4>
-            <div className="model-summary">
-              <p>Total Layers: {nodes.length}</p>
-              <p>Connections: {edges.length}</p>
-              <div className="layer-summary">
-                {[...new Set(nodes.map((node) => node.type))].map((type) => {
-                  const count = nodes.filter(
-                    (node) => node.type === type
-                  ).length;
-                  return (
-                    <div key={type} className="layer-type-count">
-                      <span className="layer-type">{type}</span>
-                      <span className="layer-count">{count}</span>
-                    </div>
-                  );
-                })}
-              </div>
             </div>
           </div>
         );
