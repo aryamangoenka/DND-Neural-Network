@@ -63,6 +63,12 @@
   border-color: #455A64;
 }
 
+/* Attention Node */
+.attention-node {
+  background-color: #673AB7; // Deep Purple
+  border-color: #512DA8;
+}
+
 /* Handle styling for input/output connections */
 .react-flow__handle {
   width: 10px;

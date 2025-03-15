@@ -5,7 +5,7 @@ import json
 import os
 import time
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Conv2D, Flatten, MaxPooling2D, Dropout, BatchNormalization, Input
+from tensorflow.keras.layers import Dense, Conv2D, Flatten, MaxPooling2D, Dropout, BatchNormalization, Input, MultiHeadAttention, Lambda, Reshape
 from dataset_loader import load_dataset  # Import the load_dataset function
 from tensorflow.keras.callbacks import Callback
 from sklearn.metrics import confusion_matrix, mean_squared_error, r2_score
@@ -163,7 +163,7 @@ def start_training(data):
         clear_session()
 
         # Build the model
-        model = build_model_from_architecture(model_architecture, x_train.shape[1:],dataset)
+        model = build_model_from_architecture(model_architecture, x_train.shape[1:], dataset)
         x_train_shape=x_train.shape[1:]
         # Compile the model
         model.compile(
@@ -325,17 +325,35 @@ def start_training(data):
             "val_loss_over_time": history.history.get("val_loss", []),
             "success":True
         })
-        model.save(TRAINED_MODEL_PATH)
+        
+        # Save the model with custom_objects for Lambda layers
+        try:
+            # First try saving with include_optimizer=False which often helps with Lambda layers
+            model.save(TRAINED_MODEL_PATH, include_optimizer=False)
+        except Exception as save_error:
+            print(f"Warning: Could not save model with standard method: {str(save_error)}")
+            
+            # Alternative approach: Save only the weights
+            weights_path = os.path.join(EXPORT_FOLDER, "model_weights.h5")
+            model.save_weights(weights_path)
+            print(f"Saved model weights to {weights_path}")
+            
+            # Save the architecture separately
+            with open(os.path.join(EXPORT_FOLDER, "model_architecture.json"), "w") as f:
+                f.write(model.to_json())
+            print("Saved model architecture separately")
+            
     except Exception as e:
         emit("training_error", {"error": str(e)})
 
-def build_model_from_architecture(architecture, input_shape,dataset_name):
+def build_model_from_architecture(architecture, input_shape, dataset_name):
     """
     Build a Keras model based on the architecture provided.
 
     Args:
         architecture (dict): The model architecture containing nodes and edges.
         input_shape (tuple): Shape of the input data.
+        dataset_name (str): Name of the dataset.
 
     Returns:
         keras.Model: A compiled Keras model.
@@ -352,55 +370,117 @@ def build_model_from_architecture(architecture, input_shape,dataset_name):
 
     # Start building the model
     model = Sequential()
+    model.add(Input(shape=input_shape))  # Always start with an input layer
 
-    # Add layers based on the nodes
-    for node in nodes:
-        layer_type = node["type"]
-        layer_data = node["data"]
-
-        if layer_type == "dense":
-            model.add(Dense(
-                units=layer_data["neurons"],
-                activation=layer_data["activation"].lower()
-            ))
-        elif layer_type == "convolution":
-            model.add(Conv2D(
-                filters=layer_data["filters"],
-                kernel_size=tuple(layer_data["kernelSize"]),
-                strides=tuple(layer_data["stride"]),
-                activation=layer_data["activation"].lower(),
-                input_shape=input_shape if len(model.layers) == 0 else None
-            ))
-        elif layer_type == "maxpooling":
-            model.add(MaxPooling2D(
-                pool_size=tuple(layer_data["poolSize"]),
-                strides=tuple(layer_data["stride"])
-            ))
-        elif layer_type == "flatten":
-            model.add(Flatten())
-        elif layer_type == "dropout":
-            model.add(Dropout(rate=layer_data["rate"]))
-        elif layer_type == "batchnormalization":
-            model.add(BatchNormalization(
-                momentum=layer_data["momentum"],
-                epsilon=layer_data["epsilon"]
-            ))
-        elif layer_type == "input":
-            model.add(Input(shape=input_shape))
+    # Add layers based on the nodes and edges
+    # First, create a dictionary of nodes by ID for easy lookup
+    nodes_by_id = {node["id"]: node for node in nodes}
+    
+    # Create a dictionary to track which nodes have been processed
+    processed_nodes = {input_layer["id"]: True}
+    
+    # Start with the input layer and follow the edges
+    current_layer_ids = [input_layer["id"]]
+    
+    while current_layer_ids:
+        next_layer_ids = []
         
-
-    # Configure the output layer dynamically based on the dataset
-    output_units = determine_output_units(dataset_name)
-    activation=output_layer["data"]["activation"].lower()  
-    if activation=="none":
-        activation=None
-    model.add(Dense(
-        units=output_units,  # Dynamically determine number of units
-        activation=activation# Use user-defined activation
-    ))
+        for layer_id in current_layer_ids:
+            # Find all edges that start from this layer
+            outgoing_edges = [edge for edge in edges if edge["source"] == layer_id]
+            
+            for edge in outgoing_edges:
+                target_id = edge["target"]
+                
+                # Skip if already processed
+                if target_id in processed_nodes:
+                    continue
+                
+                target_node = nodes_by_id[target_id]
+                layer_type = target_node["type"]
+                layer_data = target_node["data"]
+                
+                # Add the appropriate layer based on type
+                if layer_type == "dense":
+                    model.add(Dense(
+                        units=layer_data["neurons"],
+                        activation=None if layer_data["activation"].lower() == "none" else layer_data["activation"].lower()
+                    ))
+                elif layer_type == "convolution":
+                    model.add(Conv2D(
+                        filters=layer_data["filters"],
+                        kernel_size=tuple(layer_data["kernelSize"]),
+                        strides=tuple(layer_data["stride"]),
+                        activation=None if layer_data["activation"].lower() == "none" else layer_data["activation"].lower()
+                    ))
+                elif layer_type == "maxpooling":
+                    model.add(MaxPooling2D(
+                        pool_size=tuple(layer_data["poolSize"]),
+                        strides=tuple(layer_data["stride"])
+                    ))
+                elif layer_type == "flatten":
+                    model.add(Flatten())
+                elif layer_type == "dropout":
+                    model.add(Dropout(rate=layer_data["rate"]))
+                elif layer_type == "batchnormalization":
+                    model.add(BatchNormalization(
+                        momentum=layer_data["momentum"],
+                        epsilon=layer_data["epsilon"]
+                    ))
+                elif layer_type == "attention":
+                    # Get the attention parameters
+                    num_heads = layer_data.get("heads", 8)
+                    key_dim = layer_data.get("keyDim", 64)
+                    dropout_rate = layer_data.get("dropout", 0.0)
+                    
+                    # For MNIST data, we need to reshape the input for attention
+                    if dataset_name == "MNIST" or dataset_name == "CIFAR-10":
+                        # For image data, we need to reshape before applying attention
+                        # First, add a reshape layer to convert 2D image data to sequence data
+                        model.add(tf.keras.layers.Reshape((-1, input_shape[0])))  # Reshape to (sequence_length, features)
+                        
+                        # Use our custom attention layer instead of Lambda
+                        model.add(CustomAttentionLayer(
+                            num_heads=num_heads,
+                            key_dim=key_dim,
+                            dropout=dropout_rate,
+                            name=f"attention_{target_id}"
+                        ))
+                        
+                        # Reshape back to original shape for subsequent layers if needed
+                        model.add(tf.keras.layers.Reshape(input_shape))
+                    else:
+                        # For non-image data, apply attention directly using our custom attention layer
+                        model.add(CustomAttentionLayer(
+                            num_heads=num_heads,
+                            key_dim=key_dim,
+                            dropout=dropout_rate,
+                            name=f"attention_{target_id}"
+                        ))
+                elif layer_type == "output":
+                    # Configure the output layer dynamically based on the dataset
+                    output_units = determine_output_units(dataset_name)
+                    activation = layer_data["activation"].lower()
+                    if activation == "none":
+                        activation = None
+                    model.add(Dense(
+                        units=output_units,
+                        activation=activation
+                    ))
+                
+                # Mark this node as processed
+                processed_nodes[target_id] = True
+                
+                # Add to the next layer IDs to process
+                if layer_type != "output":  # Don't process beyond output layer
+                    next_layer_ids.append(target_id)
+        
+        # Update current layer IDs for the next iteration
+        current_layer_ids = next_layer_ids
+    
     print(model.summary())
     print(model.layers)
-     
+    
     return model
     
 def determine_output_units(dataset_name):
@@ -426,15 +506,65 @@ def determine_output_units(dataset_name):
     else:
         raise ValueError(f"Unknown dataset: {dataset_name}. Only 'Iris', 'MNIST', 'CIFAR-10', 'California Housing', and 'Breast Cancer' are supported.")
 
-# Existing imports and app setup remain unchanged...
+# Define custom attention function for Lambda layer
+@tf.keras.utils.register_keras_serializable(package='custom_layers')
+def apply_attention(x, num_heads=8, key_dim=64, dropout=0.0):
+    attention_layer = MultiHeadAttention(
+        num_heads=num_heads,
+        key_dim=key_dim,
+        dropout=dropout
+    )
+    return attention_layer(x, x)
 
-# ✅ Load the trained Keras model
-keras_model = tf.keras.models.load_model(TRAINED_MODEL_PATH)
+# Create a custom attention layer class instead of using Lambda
+@tf.keras.utils.register_keras_serializable(package='custom_layers')
+class CustomAttentionLayer(tf.keras.layers.Layer):
+    def __init__(self, num_heads=8, key_dim=64, dropout=0.0, **kwargs):
+        super(CustomAttentionLayer, self).__init__(**kwargs)
+        self.num_heads = num_heads
+        self.key_dim = key_dim
+        self.dropout = dropout
+        self.attention = None  # Will be initialized in build()
+        
+    def build(self, input_shape):
+        self.attention = MultiHeadAttention(
+            num_heads=self.num_heads,
+            key_dim=self.key_dim,
+            dropout=self.dropout
+        )
+        super(CustomAttentionLayer, self).build(input_shape)
+        
+    def call(self, inputs, training=None):
+        return self.attention(inputs, inputs, training=training)
+        
+    def get_config(self):
+        config = super(CustomAttentionLayer, self).get_config()
+        config.update({
+            'num_heads': self.num_heads,
+            'key_dim': self.key_dim,
+            'dropout': self.dropout
+        })
+        return config
+
+# Register the custom function for Lambda layer serialization
+tf.keras.utils.register_keras_serializable(package='custom_layers')(apply_attention)
+
+# Enable unsafe deserialization for Lambda layers
+tf.keras.config.enable_unsafe_deserialization()
+
+# ✅ Load the trained Keras model if it exists
+keras_model = None
+if os.path.exists(TRAINED_MODEL_PATH):
+    try:
+        keras_model = tf.keras.models.load_model(TRAINED_MODEL_PATH, compile=False)
+        print("✅ Successfully loaded the trained model")
+    except Exception as e:
+        print(f"⚠️ Could not load the trained model: {str(e)}")
+        print("This is normal if no model has been trained yet.")
 
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import tensorflow as tf
 
 
 
@@ -445,45 +575,102 @@ def export_model(format):
     Supported formats: py, ipynb, savedmodel, hdf5
     """
     try:
-# ✅ Load the latest trained model, not the dummy one
+        # ✅ Load the latest trained model, not the dummy one
         if not os.path.exists(TRAINED_MODEL_PATH):
             return jsonify({"error": "No trained model found. Please train the model first."}), 400
 
-        model = tf.keras.models.load_model(TRAINED_MODEL_PATH,compile=False)
+        # Enable unsafe deserialization for Lambda layers
+        tf.keras.config.enable_unsafe_deserialization()
+        
+        model = tf.keras.models.load_model(TRAINED_MODEL_PATH, compile=False)
+        
+        # Get the dataset name from the latest training config
+        dataset_name = latest_training_config.get("dataset", "")
 
         # Export according to the requested format
         if format == "py":
             file_path = os.path.join(EXPORT_FOLDER, "trained_model.py")
             with open(file_path, "w") as f:
-                f.write(generate_python_script(model, latest_training_config,x_train_shape))
+                f.write(generate_python_script(model, latest_training_config, x_train_shape))
             return send_file(file_path, as_attachment=True)
 
         elif format == "ipynb":
             file_path = os.path.join(EXPORT_FOLDER, "trained_model.ipynb")
             with open(file_path, "w") as f:
-                f.write(generate_notebook(model, latest_training_config,x_train_shape))
+                f.write(generate_notebook(model, latest_training_config, x_train_shape))
             return send_file(file_path, as_attachment=True)
 
         elif format == "savedmodel":
             # ✅ Save the model in TensorFlow 2 SavedModel format
             saved_model_dir = os.path.join(EXPORT_FOLDER, "saved_model_tf2")
             
-            # ✅ Use export for TF2 SavedModel
-            model.export(saved_model_dir)
+            try:
+                # First try direct save
+                model.save(saved_model_dir, save_format='tf', include_optimizer=False)
+            except Exception as save_error:
+                print(f"Warning: Could not save model directly: {str(save_error)}")
+                
+                # Alternative approach: Rebuild the model from architecture and copy weights
+                try:
+                    # Get the model architecture from the saved file
+                    with open(MODEL_ARCHITECTURE_FILE, "r") as f:
+                        model_architecture = json.load(f)
+                    
+                    # Build a fresh model from the architecture
+                    fresh_model = build_model_from_architecture(
+                        model_architecture, 
+                        x_train_shape, 
+                        dataset_name
+                    )
+                    
+                    # Copy weights from the trained model to the fresh model
+                    fresh_model.set_weights(model.get_weights())
+                    
+                    # Save the fresh model
+                    fresh_model.save(saved_model_dir, save_format='tf', include_optimizer=False)
+                except Exception as rebuild_error:
+                    return jsonify({"error": f"Could not save model: {str(rebuild_error)}"}), 500
 
-            # 🔥 Zip the SavedModel directory
+            # Zip the SavedModel directory
             zip_path = shutil.make_archive(saved_model_dir, 'zip', saved_model_dir)
 
             # 📤 Send the zipped SavedModel
             return send_file(
-                f"{saved_model_dir}.zip",
+                zip_path,
                 as_attachment=True,
                 mimetype='application/zip'
             )
 
         elif format == "keras":
             file_path = os.path.join(EXPORT_FOLDER, "trained_model.keras")
-            model.save(file_path)
+            
+            try:
+                # First try direct save
+                model.save(file_path, include_optimizer=False)
+            except Exception as save_error:
+                print(f"Warning: Could not save model directly: {str(save_error)}")
+                
+                # Alternative approach: Rebuild the model from architecture and copy weights
+                try:
+                    # Get the model architecture from the saved file
+                    with open(MODEL_ARCHITECTURE_FILE, "r") as f:
+                        model_architecture = json.load(f)
+                    
+                    # Build a fresh model from the architecture
+                    fresh_model = build_model_from_architecture(
+                        model_architecture, 
+                        x_train_shape, 
+                        dataset_name
+                    )
+                    
+                    # Copy weights from the trained model to the fresh model
+                    fresh_model.set_weights(model.get_weights())
+                    
+                    # Save the fresh model
+                    fresh_model.save(file_path, include_optimizer=False)
+                except Exception as rebuild_error:
+                    return jsonify({"error": f"Could not save model: {str(rebuild_error)}"}), 500
+                
             return send_file(file_path, as_attachment=True)
         
         elif format == "pytorch":
@@ -502,165 +689,277 @@ def export_model(format):
             return jsonify({"error": f"Unsupported format: {format}"}), 400
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        import traceback
+        traceback_str = traceback.format_exc()
+        print(f"Export error: {str(e)}\n{traceback_str}")
+        return jsonify({"error": str(e), "traceback": traceback_str}), 500
 
 def generate_python_script(model, training_config, x_train_shape):
-
-    LOSS_FUNCTION_MAPPING = {
-        "Categorical Cross-Entropy": "categorical_crossentropy",
-        "Binary Cross-Entropy": "binary_crossentropy",
-        "Mean Squared Error": "mse",
-        "Mean Absolute Error": "mae",
-        "Huber Loss": "huber"
-    }
-    optimizer = training_config.get("optimizer", "adam").lower()
-    loss_function_init = training_config.get("lossFunction", "Categorical Cross-Entropy")
-    loss_function=LOSS_FUNCTION_MAPPING.get(loss_function_init)
-    batch_size = training_config.get("batchSize", 32)
+    """Generate a Python script that recreates the model architecture and training process."""
+    
+    # Get dataset name from training config
+    dataset_name = training_config.get("dataset", "Unknown")
+    
+    # Determine input shape based on dataset
+    input_shape_str = str(x_train_shape[1:]) if len(x_train_shape) > 1 else "(None,)"
+    
+    # Extract model parameters
     epochs = training_config.get("epochs", 10)
-    dataset_name = training_config.get("dataset", "").lower()
-
-    # ✅ Set validation split condition
-    validation_split = 0.2 if dataset_name in ["iris", "breast cancer", "california housing"] else 0.1
-
-
-    # Dataset-specific preprocessing code
-    preprocessing_code = ""
-
-    if dataset_name == "iris":
-        preprocessing_code = """
-from sklearn.datasets import load_iris
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler, OneHotEncoder
-
-# Load Iris dataset
-data = load_iris()
-X, y = data.data, data.target
-
-# Standardize features
-scaler = StandardScaler()
-X = scaler.fit_transform(X)
-
-# One-hot encode labels
-encoder = OneHotEncoder(sparse_output=False)
-y = encoder.fit_transform(y.reshape(-1, 1))
-
-# Split data
-x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-"""
-    elif dataset_name == "breast cancer":
-        preprocessing_code = """
-from sklearn.datasets import load_breast_cancer
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
-
-# Load Breast Cancer dataset
-data = load_breast_cancer()
-X, y = data.data, data.target
-
-# Standardize features
-scaler = StandardScaler()
-X = scaler.fit_transform(X)
-
-# Split data
-x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
-"""
-    elif dataset_name == "california housing":
-        preprocessing_code = """
-from sklearn.datasets import fetch_california_housing
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
-
-# Load California Housing dataset
-data = fetch_california_housing()
-X, y = data.data, data.target
-
-# Standardize features
-scaler = StandardScaler()
-X = scaler.fit_transform(X)
-
-# Split data
-x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-"""
-    elif dataset_name == "mnist":
-        preprocessing_code = """
-from tensorflow.keras.datasets import mnist
-from tensorflow.keras.utils import to_categorical
-
-# Load MNIST dataset
-(x_train, y_train), (x_test, y_test) = mnist.load_data()
-
-# Normalize pixel values
-x_train = x_train.reshape(-1, 28, 28, 1).astype("float32") / 255.0
-x_test = x_test.reshape(-1, 28, 28, 1).astype("float32") / 255.0
-
-# One-hot encode labels
-y_train = to_categorical(y_train, 10)
-y_test = to_categorical(y_test, 10)
-"""
-    elif dataset_name == "cifar-10":
-        preprocessing_code = """
-from tensorflow.keras.datasets import cifar10
-from tensorflow.keras.utils import to_categorical
-
-# Load CIFAR-10 dataset
-(x_train, y_train), (x_test, y_test) = cifar10.load_data()
-
-# Normalize pixel values
-x_train = x_train.astype("float32") / 255.0
-x_test = x_test.astype("float32") / 255.0
-
-# One-hot encode labels
-y_train = to_categorical(y_train, 10)
-y_test = to_categorical(y_test, 10)
-"""
-
-    # Generate model layers code
-    layers_code = ""
-    layers_code+=f"Input(shape={x_train_shape}),\n"
-    for i, layer in enumerate(model.layers):
-        config = layer.get_config()
-        if isinstance(layer, Dense):
-            
-            layers_code += f"Dense({config['units']}, activation='{config['activation']}'),\n"
-        elif isinstance(layer, Conv2D):
-            layers_code += f"Conv2D({config['filters']}, {config['kernel_size']}, activation='{config['activation']}'),\n"
-        elif isinstance(layer, Flatten):
-            layers_code += "Flatten(),\n"
-        elif isinstance(layer, Dropout):
-            layers_code += f"Dropout({config['rate']}),\n"
-        elif isinstance(layer, MaxPooling2D):
-            layers_code += f"MaxPooling2D(pool_size={config['pool_size']}),\n"
-        elif isinstance(layer, BatchNormalization):
-            layers_code += "BatchNormalization(),\n"
-
-    # Return the complete script
-    return f"""
-import tensorflow as tf
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Conv2D, Flatten, Dropout, MaxPooling2D, BatchNormalization, Input
-
-# Dataset preprocessing
-{preprocessing_code}
-
-# Define the model
-model = Sequential([
-    {layers_code.strip()}
-])
-
-model.compile(optimizer='{optimizer}', loss='{loss_function}', metrics=['accuracy'])
-
-# Train the model
-model.fit(x_train, y_train, epochs={epochs}, batch_size={batch_size}, validation_split={validation_split})
-
-# Evaluate the model
-loss, accuracy = model.evaluate(x_test, y_test)
-print(f"Test Loss: {{loss}}")
-print(f"Test Accuracy: {{accuracy}}")
-
-# Save the model
-model.save('trained_model.keras')
-"""
+    batch_size = training_config.get("batch_size", 32)
+    validation_split = training_config.get("validation_split", 0.2)
+    
+    # Start building the script
+    script = [
+        "import tensorflow as tf",
+        "import numpy as np",
+        "from tensorflow.keras.models import Sequential",
+        "from tensorflow.keras.layers import Dense, Conv2D, Flatten, Dropout, MaxPooling2D, BatchNormalization, Input, MultiHeadAttention, Lambda, Reshape",
+        "",
+        "# Enable unsafe deserialization for Lambda layers",
+        "tf.keras.config.enable_unsafe_deserialization()",
+        "",
+        "# Define custom attention function for Lambda layer",
+        "@tf.keras.utils.register_keras_serializable(package='custom_layers')",
+        "def apply_attention(x, num_heads=8, key_dim=64, dropout=0.0):",
+        "    attention_layer = MultiHeadAttention(",
+        "        num_heads=num_heads,",
+        "        key_dim=key_dim,",
+        "        dropout=dropout",
+        "    )",
+        "    return attention_layer(x, x)",
+        "",
+        "# Define custom attention layer class",
+        "@tf.keras.utils.register_keras_serializable(package='custom_layers')",
+        "class CustomAttentionLayer(tf.keras.layers.Layer):",
+        "    def __init__(self, num_heads=8, key_dim=64, dropout=0.0, **kwargs):",
+        "        super(CustomAttentionLayer, self).__init__(**kwargs)",
+        "        self.num_heads = num_heads",
+        "        self.key_dim = key_dim",
+        "        self.dropout = dropout",
+        "        self.attention = None  # Will be initialized in build()",
+        "        ",
+        "    def build(self, input_shape):",
+        "        self.attention = MultiHeadAttention(",
+        "            num_heads=self.num_heads,",
+        "            key_dim=self.key_dim,",
+        "            dropout=self.dropout",
+        "        )",
+        "        super(CustomAttentionLayer, self).build(input_shape)",
+        "        ",
+        "    def call(self, inputs, training=None):",
+        "        return self.attention(inputs, inputs, training=training)",
+        "        ",
+        "    def get_config(self):",
+        "        config = super(CustomAttentionLayer, self).get_config()",
+        "        config.update({",
+        "            'num_heads': self.num_heads,",
+        "            'key_dim': self.key_dim,",
+        "            'dropout': self.dropout",
+        "        })",
+        "        return config",
+        "",
+        "# Load and preprocess the dataset"
+    ]
+    
+    # Add dataset-specific code
+    if dataset_name == "MNIST":
+        script.extend([
+            "# Load MNIST dataset",
+            "(x_train, y_train), (x_test, y_test) = tf.keras.datasets.mnist.load_data()",
+            "# Normalize pixel values to be between 0 and 1",
+            "x_train, x_test = x_train / 255.0, x_test / 255.0",
+            "# Reshape for CNN input (28, 28, 1)",
+            "x_train = x_train.reshape(x_train.shape[0], 28, 28, 1)",
+            "x_test = x_test.reshape(x_test.shape[0], 28, 28, 1)",
+            "# Convert class vectors to binary class matrices (one-hot encoding)",
+            "y_train = tf.keras.utils.to_categorical(y_train, 10)",
+            "y_test = tf.keras.utils.to_categorical(y_test, 10)"
+        ])
+        input_shape_str = "(28, 28, 1)"
+    elif dataset_name == "CIFAR-10":
+        script.extend([
+            "# Load CIFAR-10 dataset",
+            "(x_train, y_train), (x_test, y_test) = tf.keras.datasets.cifar10.load_data()",
+            "# Normalize pixel values to be between 0 and 1",
+            "x_train, x_test = x_train / 255.0, x_test / 255.0",
+            "# Convert class vectors to binary class matrices (one-hot encoding)",
+            "y_train = tf.keras.utils.to_categorical(y_train, 10)",
+            "y_test = tf.keras.utils.to_categorical(y_test, 10)"
+        ])
+        input_shape_str = "(32, 32, 3)"
+    elif dataset_name == "Iris":
+        script.extend([
+            "# Load Iris dataset",
+            "from sklearn.datasets import load_iris",
+            "from sklearn.model_selection import train_test_split",
+            "from sklearn.preprocessing import StandardScaler, OneHotEncoder",
+            "",
+            "iris = load_iris()",
+            "X = iris.data",
+            "y = iris.target.reshape(-1, 1)",
+            "",
+            "# Scale features",
+            "scaler = StandardScaler()",
+            "X_scaled = scaler.fit_transform(X)",
+            "",
+            "# One-hot encode the labels",
+            "encoder = OneHotEncoder(sparse=False)",
+            "y_encoded = encoder.fit_transform(y)",
+            "",
+            "# Split the data",
+            "x_train, x_test, y_train, y_test = train_test_split(X_scaled, y_encoded, test_size=0.2, random_state=42)"
+        ])
+        input_shape_str = "(4,)"
+    elif dataset_name == "Breast Cancer":
+        script.extend([
+            "# Load Breast Cancer dataset",
+            "from sklearn.datasets import load_breast_cancer",
+            "from sklearn.model_selection import train_test_split",
+            "from sklearn.preprocessing import StandardScaler",
+            "",
+            "cancer = load_breast_cancer()",
+            "X = cancer.data",
+            "y = cancer.target",
+            "",
+            "# Scale features",
+            "scaler = StandardScaler()",
+            "X_scaled = scaler.fit_transform(X)",
+            "",
+            "# Split the data",
+            "x_train, x_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42)"
+        ])
+        input_shape_str = "(30,)"
+    elif dataset_name == "California Housing":
+        script.extend([
+            "# Load California Housing dataset",
+            "from sklearn.datasets import fetch_california_housing",
+            "from sklearn.model_selection import train_test_split",
+            "from sklearn.preprocessing import StandardScaler",
+            "",
+            "housing = fetch_california_housing()",
+            "X = housing.data",
+            "y = housing.target",
+            "",
+            "# Scale features",
+            "scaler = StandardScaler()",
+            "X_scaled = scaler.fit_transform(X)",
+            "",
+            "# Split the data",
+            "x_train, x_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42)"
+        ])
+        input_shape_str = "(8,)"
+    else:
+        script.extend([
+            "# Replace with your own dataset loading code",
+            "# x_train, y_train = ...",
+            "# x_test, y_test = ..."
+        ])
+    
+    script.append("")
+    
+    # Add model definition
+    script.extend([
+        "# Define the model",
+        f"model = Sequential([",
+        f"    Input(shape={input_shape_str}),"
+    ])
+    
+    # Extract model architecture from the model object
+    for layer in model.layers[1:]:  # Skip the input layer
+        if isinstance(layer, tf.keras.layers.Dense):
+            activation = f", activation='{layer.activation.__name__}'" if layer.activation.__name__ != "linear" else ""
+            script.append(f"    Dense({layer.units}{activation}),")
+        elif isinstance(layer, tf.keras.layers.Conv2D):
+            activation = f", activation='{layer.activation.__name__}'" if layer.activation.__name__ != "linear" else ""
+            script.append(f"    Conv2D({layer.filters}, {layer.kernel_size}, strides={layer.strides}, padding='{layer.padding}'{activation}),")
+        elif isinstance(layer, tf.keras.layers.MaxPooling2D):
+            script.append(f"    MaxPooling2D(pool_size={layer.pool_size}, strides={layer.strides}, padding='{layer.padding}'),")
+        elif isinstance(layer, tf.keras.layers.Flatten):
+            script.append(f"    Flatten(),")
+        elif isinstance(layer, tf.keras.layers.Dropout):
+            script.append(f"    Dropout({layer.rate}),")
+        elif isinstance(layer, tf.keras.layers.BatchNormalization):
+            script.append(f"    BatchNormalization(momentum={layer.momentum}, epsilon={layer.epsilon}),")
+        elif isinstance(layer, tf.keras.layers.Lambda):
+            if "attention" in layer.name:
+                # Extract parameters from the layer name if available
+                parts = layer.name.split('_')
+                num_heads = 8
+                key_dim = 64
+                dropout_rate = 0.0
+                
+                for part in parts:
+                    if part.startswith('heads'):
+                        try:
+                            num_heads = int(part.replace('heads', ''))
+                        except:
+                            pass
+                    elif part.startswith('key'):
+                        try:
+                            key_dim = int(part.replace('key', ''))
+                        except:
+                            pass
+                    elif part.startswith('drop'):
+                        try:
+                            dropout_rate = float(part.replace('drop', ''))
+                        except:
+                            pass
+                
+                script.append(f"    CustomAttentionLayer(num_heads={num_heads}, key_dim={key_dim}, dropout={dropout_rate}, name='{layer.name}'),")
+            else:
+                script.append(f"    Lambda(lambda x: x),  # Custom Lambda layer")
+        elif isinstance(layer, CustomAttentionLayer):
+            script.append(f"    CustomAttentionLayer(num_heads={layer.num_heads}, key_dim={layer.key_dim}, dropout={layer.dropout}, name='{layer.name}'),")
+        elif isinstance(layer, tf.keras.layers.Reshape):
+            script.append(f"    Reshape({layer.target_shape}),")
+    
+    script.append("])")
+    script.append("")
+    
+    # Add compilation and training
+    loss_function = training_config.get("loss", "categorical_crossentropy")
+    optimizer = training_config.get("optimizer", "adam")
+    
+    script.extend([
+        "# Compile the model",
+        f"model.compile(optimizer='{optimizer}', loss='{loss_function}', metrics=['accuracy'])",
+        "",
+        "# Display model summary",
+        "model.summary()",
+        "",
+        "# Train the model",
+        f"history = model.fit(x_train, y_train, epochs={epochs}, batch_size={batch_size}, validation_split={validation_split})",
+        "",
+        "# Evaluate the model",
+        "loss, accuracy = model.evaluate(x_test, y_test)",
+        "print(f\"Test Loss: {loss}\")",
+        "print(f\"Test Accuracy: {accuracy}\")",
+        "",
+        "# Save the model",
+        "model.save('trained_model.keras')",
+        "",
+        "# Optional: Plot training history",
+        "import matplotlib.pyplot as plt",
+        "",
+        "plt.figure(figsize=(12, 4))",
+        "plt.subplot(1, 2, 1)",
+        "plt.plot(history.history['loss'], label='Training Loss')",
+        "plt.plot(history.history['val_loss'], label='Validation Loss')",
+        "plt.xlabel('Epoch')",
+        "plt.ylabel('Loss')",
+        "plt.legend()",
+        "",
+        "plt.subplot(1, 2, 2)",
+        "plt.plot(history.history['accuracy'], label='Training Accuracy')",
+        "plt.plot(history.history['val_accuracy'], label='Validation Accuracy')",
+        "plt.xlabel('Epoch')",
+        "plt.ylabel('Accuracy')",
+        "plt.legend()",
+        "plt.tight_layout()",
+        "plt.show()"
+    ])
+    
+    return "\n".join(script)
 
 
 
@@ -783,11 +1082,12 @@ y_test = to_categorical(y_test, 10)
     layers_code+=f"Input(shape={x_train_shape}),\n"
     for i, layer in enumerate(model.layers):
         config = layer.get_config()
-        
         if isinstance(layer, Dense):
-            layers_code += f"Dense({config['units']}, activation='{config['activation']}'),\n"
+            activation = config['activation'] if config['activation'] else 'None'
+            layers_code += f"Dense({config['units']}, activation='{activation}'),\n"
         elif isinstance(layer, Conv2D):
-            layers_code += f"Conv2D({config['filters']}, {config['kernel_size']}, activation='{config['activation']}'),\n"
+            activation = config['activation'] if config['activation'] else 'None'
+            layers_code += f"Conv2D({config['filters']}, {config['kernel_size']}, activation='{activation}'),\n"
         elif isinstance(layer, Flatten):
             layers_code += "Flatten(),\n"
         elif isinstance(layer, Dropout):
@@ -796,37 +1096,100 @@ y_test = to_categorical(y_test, 10)
             layers_code += f"MaxPooling2D(pool_size={config['pool_size']}),\n"
         elif isinstance(layer, BatchNormalization):
             layers_code += "BatchNormalization(),\n"
-        
+        elif isinstance(layer, MultiHeadAttention) or (hasattr(layer, 'layer') and isinstance(layer.layer, MultiHeadAttention)):
+            # Handle MultiHeadAttention layer
+            if hasattr(layer, 'layer') and isinstance(layer.layer, MultiHeadAttention):
+                # If it's wrapped in a Lambda layer
+                attention_config = layer.layer.get_config()
+            else:
+                attention_config = config
             
+            num_heads = attention_config.get('num_heads', 8)
+            key_dim = attention_config.get('key_dim', 64)
+            dropout = attention_config.get('dropout', 0.0)
+            
+            # For MNIST or CIFAR-10, we need special handling with reshaping
+            if dataset_name.lower() in ["mnist", "cifar-10"]:
+                layers_code += f"# Reshape for attention with image data\n"
+                layers_code += f"Reshape((-1, {x_train_shape[0]})),  # Reshape to sequence\n"
+                layers_code += f"CustomAttentionLayer(num_heads={num_heads}, key_dim={key_dim}, dropout={dropout})),\n"
+                layers_code += f"Reshape({x_train_shape}),  # Reshape back to original\n"
+            else:
+                layers_code += f"# Attention mechanism\n"
+                layers_code += f"CustomAttentionLayer(num_heads={num_heads}, key_dim={key_dim}, dropout={dropout})),\n"
 
-    notebook_content = {
-        "cells": [
-            {
-                "cell_type": "code",
-                "metadata": {},
-                "source": [
-                    "import tensorflow as tf\n",
-                    "from tensorflow.keras.models import Sequential\n",
-                    "from tensorflow.keras.layers import Dense, Conv2D, Flatten, Dropout, MaxPooling2D, BatchNormalization, Input\n\n",
-                    f"{preprocessing_code}\n\n",
-                    "# Define the model\n",
-                    "model = Sequential([\n",
-                    f"{layers_code.strip()}\n",
-                    "])\n\n",
-                    f"model.compile(optimizer='{optimizer}', loss='{loss_function}', metrics=['accuracy'])\n",
-                    f"model.fit(x_train, y_train, epochs={epochs}, batch_size={batch_size}, validation_split={validation_split})\n",
-                    "model.save('trained_model.keras')\n"
-                ],
-                "execution_count": None,
-                "outputs": []
-            }
-        ],
-        "metadata": {},
-        "nbformat": 4,
-        "nbformat_minor": 2
-    }
+    # Return the complete script
+    return f"""
+import tensorflow as tf
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Conv2D, Flatten, Dropout, MaxPooling2D, BatchNormalization, Input, MultiHeadAttention, Lambda, Reshape
 
-    return json.dumps(notebook_content)
+# Define custom attention function for Lambda layer
+@tf.keras.utils.register_keras_serializable(package='custom_layers')
+def apply_attention(x, num_heads=8, key_dim=64, dropout=0.0):
+    attention_layer = MultiHeadAttention(
+        num_heads=num_heads,
+        key_dim=key_dim,
+        dropout=dropout
+    )
+    return attention_layer(x, x)
+
+# Define custom attention layer class
+@tf.keras.utils.register_keras_serializable(package='custom_layers')
+class CustomAttentionLayer(tf.keras.layers.Layer):
+    def __init__(self, num_heads=8, key_dim=64, dropout=0.0, **kwargs):
+        super(CustomAttentionLayer, self).__init__(**kwargs)
+        self.num_heads = num_heads
+        self.key_dim = key_dim
+        self.dropout = dropout
+        self.attention = None  # Will be initialized in build()
+        
+    def build(self, input_shape):
+        self.attention = MultiHeadAttention(
+            num_heads=self.num_heads,
+            key_dim=self.key_dim,
+            dropout=self.dropout
+        )
+        super(CustomAttentionLayer, self).build(input_shape)
+        
+    def call(self, inputs, training=None):
+        return self.attention(inputs, inputs, training=training)
+        
+    def get_config(self):
+        config = super(CustomAttentionLayer, self).get_config()
+        config.update({
+            'num_heads': self.num_heads,
+            'key_dim': self.key_dim,
+            'dropout': self.dropout
+        })
+        return config
+
+# Dataset preprocessing
+{preprocessing_code}
+
+# Define the model
+model = Sequential([
+    {layers_code.strip()}
+])
+
+model.compile(optimizer='{optimizer}', loss='{loss_function}', metrics=['accuracy'])
+
+# Train the model
+model.fit(x_train, y_train, epochs={epochs}, batch_size={batch_size}, validation_split={validation_split})
+
+# Evaluate the model
+loss, accuracy = model.evaluate(x_test, y_test)
+print(f"Test Loss: {{loss}}")
+print(f"Test Accuracy: {{accuracy}}")
+
+# Save the model
+model.save('trained_model.keras')
+"""
+
+
+
+
+
 
 def generate_pytorch_script(model, training_config, x_train_shape):
     """
@@ -996,7 +1359,7 @@ test_loader = DataLoader(test_dataset, batch_size={batch_size}, shuffle=False)
             pytorch_code += f"        self.fc{i} = nn.Linear({in_features}, {config['units']})\n"
 
             # Define Activation Function (Only if explicitly specified)
-            activation_fn = config['activation'].lower()
+            activation_fn = config['activation'].lower() if config['activation'] else 'none'
             if activation_fn == "relu":
                 pytorch_code += f"        self.act{i} = nn.ReLU()\n"
             elif activation_fn == "sigmoid":
@@ -1018,12 +1381,42 @@ test_loader = DataLoader(test_dataset, batch_size={batch_size}, shuffle=False)
                 pytorch_code += f"        self.bn{i} = nn.BatchNorm1d({previous_layer_output[0]})\n"
             else:
                 pytorch_code += f"        self.bn{i} = nn.BatchNorm2d({previous_layer_output[0]})\n"
+                
+        elif isinstance(layer, MultiHeadAttention) or (hasattr(layer, 'layer') and isinstance(layer.layer, MultiHeadAttention)):
+            # Handle MultiHeadAttention layer
+            if hasattr(layer, 'layer') and isinstance(layer.layer, MultiHeadAttention):
+                # If it's wrapped in a Lambda layer
+                attention_config = layer.layer.get_config()
+            else:
+                attention_config = config
+            
+            num_heads = attention_config.get('num_heads', 8)
+            key_dim = attention_config.get('key_dim', 64)
+            dropout = attention_config.get('dropout', 0.0)
+            
+            # PyTorch's MultiheadAttention has a different interface
+            pytorch_code += f"        # Attention mechanism\n"
+            
+            # For image data, we need special handling
+            if dataset_name.lower() in ["mnist", "cifar-10"]:
+                pytorch_code += f"        # Handle attention for image data\n"
+                pytorch_code += f"        batch_size = x.size(0)\n"
+                pytorch_code += f"        x_reshaped = x.view(batch_size, -1, {x_train_shape[0]})\n"
+                pytorch_code += f"        x_t = x_reshaped.transpose(0, 1)  # PyTorch expects seq_len, batch, features\n"
+                pytorch_code += f"        attn_output, _ = self.attention{i}(x_t, x_t, x_t)\n"
+                pytorch_code += f"        x = attn_output.transpose(0, 1).reshape(batch_size, {x_train_shape[0]}, {x_train_shape[1]}, {x_train_shape[2]})\n"
+            else:
+                pytorch_code += f"        # Prepare input for attention (assuming batch_first=False)\n"
+                pytorch_code += f"        x_t = x.transpose(0, 1)  # PyTorch expects seq_len, batch, features\n"
+                pytorch_code += f"        attn_output, _ = self.attention{i}(x_t, x_t, x_t)\n"
+                pytorch_code += f"        x = attn_output.transpose(0, 1)  # Back to batch, seq_len, features\n"
 
     pytorch_code += "    def forward(self, x):\n"
     for i, layer in enumerate(model.layers):
         if isinstance(layer, Dense):
             pytorch_code += f"        x = self.fc{i}(x)\n"
-            pytorch_code += f"        x = self.act{i}(x)\n"
+            if hasattr(layer, 'activation') and layer.activation is not None:
+                pytorch_code += f"        x = self.act{i}(x)\n"
         elif isinstance(layer, Conv2D):
             pytorch_code += f"        x = self.conv{i}(x)\n"
         elif isinstance(layer, Flatten):
@@ -1034,6 +1427,13 @@ test_loader = DataLoader(test_dataset, batch_size={batch_size}, shuffle=False)
             pytorch_code += f"        x = self.pool{i}(x)\n"
         elif isinstance(layer, BatchNormalization):
             pytorch_code += f"        x = self.bn{i}(x)\n"
+        elif isinstance(layer, MultiHeadAttention) or (hasattr(layer, 'layer') and isinstance(layer.layer, MultiHeadAttention)):
+            # For PyTorch's MultiheadAttention, we need to handle the input differently
+            pytorch_code += f"        # Prepare input for attention (assuming batch_first=False)\n"
+            pytorch_code += f"        x_t = x.transpose(0, 1)  # PyTorch expects seq_len, batch, features\n"
+            pytorch_code += f"        attn_output, _ = self.attention{i}(x_t, x_t, x_t)\n"
+            pytorch_code += f"        x = attn_output.transpose(0, 1)  # Back to batch, seq_len, features\n"
+    
     pytorch_code += "        return x\n"
 
     pytorch_code += "\n# Initialize the model\n"
@@ -1061,7 +1461,6 @@ torch.save(model.state_dict(), "trained_model.pth")
 
 
 """
-    
 
     return pytorch_code
 

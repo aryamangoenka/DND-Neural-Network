@@ -25,6 +25,7 @@ import {
   BatchNormalizationNode,
   InputNode,
   OutputNode,
+  AttentionNode,
 } from "../components/CustomNodes";
 
 const nodeTypes = {
@@ -36,6 +37,7 @@ const nodeTypes = {
   flatten: FlattenNode,
   dropout: DropoutNode,
   batchnormalization: BatchNormalizationNode,
+  attention: AttentionNode,
 };
 
 const BuildPage = (): JSX.Element => {
@@ -59,6 +61,7 @@ const BuildPage = (): JSX.Element => {
       dropout: { rate: 0.2 },
       activation: { activation: "ReLU" },
       batchnormalization: { momentum: 0.99, epsilon: 0.001 },
+      attention: { heads: 8, keyDim: 64, dropout: 0.0 },
       output: { activation: "None" },
     };
 
@@ -129,6 +132,117 @@ const BuildPage = (): JSX.Element => {
           id: "Output-1",
           data: { label: "Output Layer" },
           position: { x: 700, y: 400 },
+          type: "output",
+        },
+      ],
+      TransformerModel: [
+        {
+          id: "Input-1",
+          data: { label: "Input Layer" },
+          position: { x: 100, y: 100 },
+          type: "input",
+        },
+        // First Transformer Block
+        {
+          id: "BatchNorm-1",
+          data: {
+            label: "Layer Normalization",
+            momentum: 0.99,
+            epsilon: 0.001,
+          },
+          position: { x: 300, y: 100 },
+          type: "batchnormalization",
+        },
+        {
+          id: "Attention-1",
+          data: {
+            label: "Multi-Head Attention",
+            heads: 8,
+            keyDim: 64,
+            dropout: 0.1,
+          },
+          position: { x: 500, y: 100 },
+          type: "attention",
+        },
+        {
+          id: "BatchNorm-2",
+          data: {
+            label: "Layer Normalization",
+            momentum: 0.99,
+            epsilon: 0.001,
+          },
+          position: { x: 700, y: 100 },
+          type: "batchnormalization",
+        },
+        {
+          id: "Dense-1",
+          data: {
+            label: "Feed-Forward Network",
+            neurons: 256,
+            activation: "ReLU",
+          },
+          position: { x: 900, y: 100 },
+          type: "dense",
+        },
+        // Second Transformer Block
+        {
+          id: "BatchNorm-3",
+          data: {
+            label: "Layer Normalization",
+            momentum: 0.99,
+            epsilon: 0.001,
+          },
+          position: { x: 300, y: 300 },
+          type: "batchnormalization",
+        },
+        {
+          id: "Attention-2",
+          data: {
+            label: "Multi-Head Attention",
+            heads: 8,
+            keyDim: 64,
+            dropout: 0.1,
+          },
+          position: { x: 500, y: 300 },
+          type: "attention",
+        },
+        {
+          id: "BatchNorm-4",
+          data: {
+            label: "Layer Normalization",
+            momentum: 0.99,
+            epsilon: 0.001,
+          },
+          position: { x: 700, y: 300 },
+          type: "batchnormalization",
+        },
+        {
+          id: "Dense-2",
+          data: {
+            label: "Feed-Forward Network",
+            neurons: 256,
+            activation: "ReLU",
+          },
+          position: { x: 900, y: 300 },
+          type: "dense",
+        },
+        // Output Head
+        {
+          id: "Dense-3",
+          data: { label: "Dense Layer", neurons: 128, activation: "ReLU" },
+          position: { x: 500, y: 500 },
+          type: "dense",
+        },
+        {
+          id: "Dropout-1",
+          data: { label: "Dropout Layer", rate: 0.2 },
+          position: { x: 700, y: 500 },
+          type: "dropout",
+        },
+        {
+          id: "Output-1",
+          data: { label: "Output Layer", activation: "Softmax" },
+          position: { x: 900, y: 500 },
           type: "output",
         },
       ],
@@ -358,6 +472,23 @@ const BuildPage = (): JSX.Element => {
         }
       }
 
+      // Attention Layer Validation
+      if (type === "attention") {
+        if (!Number.isInteger(data.heads) || data.heads <= 0) {
+          nodeErrors.heads = "Number of heads must be a positive integer.";
+        }
+        if (!Number.isInteger(data.keyDim) || data.keyDim <= 0) {
+          nodeErrors.keyDim = "Key dimension must be a positive integer.";
+        }
+        if (
+          typeof data.dropout !== "number" ||
+          data.dropout < 0 ||
+          data.dropout > 1
+        ) {
+          nodeErrors.dropout = "Dropout rate must be a number between 0 and 1.";
+        }
+      }
+
       // Output Layer Validation
       if (type === "output") {
         if (!["None", "Sigmoid", "Softmax"].includes(data.activation)) {
@@ -376,7 +507,14 @@ const BuildPage = (): JSX.Element => {
         }
 
         // Ensure no incompatible layers for Iris
-        if ([type && "convolution", "maxpooling", "flatten"].includes(type)) {
+        if (
+          [
+            type && "convolution",
+            "maxpooling",
+            "flatten",
+            "attention",
+          ].includes(type)
+        ) {
           nodeErrors.type = `Layer type '${type}' is not compatible with the Iris dataset.`;
         }
       }
@@ -413,7 +551,10 @@ const BuildPage = (): JSX.Element => {
       // California Housing Dataset Specific Validations
       if (dataset === "California Housing") {
         // Ensure no incompatible layers for California Housing
-        if (type && ["convolution", "maxpooling", "flatten"].includes(type)) {
+        if (
+          type &&
+          ["convolution", "maxpooling", "flatten", "attention"].includes(type)
+        ) {
           nodeErrors.type = `Layer type '${type}' is not compatible with the California Housing dataset.`;
         }
 
@@ -427,7 +568,10 @@ const BuildPage = (): JSX.Element => {
       // Breast Cancer Dataset Specific Validations
       if (dataset === "Breast Cancer") {
         // Ensure no incompatible layers for Breast Cancer
-        if (type && ["convolution", "maxpooling", "flatten"].includes(type)) {
+        if (
+          type &&
+          ["convolution", "maxpooling", "flatten", "attention"].includes(type)
+        ) {
           nodeErrors.type = `Layer type '${type}' is not compatible with the Breast Cancer dataset.`;
         }
 
@@ -522,6 +666,7 @@ const BuildPage = (): JSX.Element => {
           "Flatten",
           "Dropout",
           "BatchNormalization",
+          "Attention",
         ].map((type) => (
           <div key={type} className="layer-card">
             <span>{type}</span>
@@ -536,6 +681,9 @@ const BuildPage = (): JSX.Element => {
             Simple Feedforward
           </button>
           <button onClick={() => loadTemplate("CNN")}>CNN</button>
+          <button onClick={() => loadTemplate("TransformerModel")}>
+            Transformer Model
+          </button>
           <button onClick={() => loadTemplate("FullyConnectedRegression")}>
             Fully Connected Regression
           </button>
@@ -882,6 +1030,43 @@ const BuildPage = (): JSX.Element => {
                     value={selectedNode.data.epsilon || 0.001}
                     onChange={(e) =>
                       updateParameter("epsilon", parseFloat(e.target.value))
+                    }
+                  />
+                </>
+              )}
+
+              {/* Attention Layer */}
+              {selectedNode.type === "attention" && (
+                <>
+                  <label>Number of Heads:</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={selectedNode.data.heads || 8}
+                    onChange={(e) =>
+                      updateParameter("heads", parseInt(e.target.value))
+                    }
+                  />
+
+                  <label>Key Dimension:</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={selectedNode.data.keyDim || 64}
+                    onChange={(e) =>
+                      updateParameter("keyDim", parseInt(e.target.value))
+                    }
+                  />
+
+                  <label>Dropout Rate:</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    value={selectedNode.data.dropout || 0.0}
+                    onChange={(e) =>
+                      updateParameter("dropout", parseFloat(e.target.value))
                     }
                   />
                 </>
