@@ -403,6 +403,7 @@ const NewBuildPage: React.FC = () => {
 
   // Function to handle saving the model
   const handleSaveModel = async (): Promise<void> => {
+    // Check if dataset is selected
     if (!selectedDataset) {
       alert("No dataset selected! Please select a dataset before saving.");
       return;
@@ -417,6 +418,16 @@ const NewBuildPage: React.FC = () => {
     }
 
     try {
+      // Show saving indicator
+      const saveButton = document.querySelector(
+        ".save-button"
+      ) as HTMLButtonElement;
+      if (saveButton) {
+        saveButton.innerHTML =
+          '<i class="fas fa-spinner fa-spin"></i> Saving...';
+        saveButton.disabled = true;
+      }
+
       // Prepare model architecture
       const modelArchitecture = {
         nodes: nodes.map((node) => ({
@@ -442,10 +453,20 @@ const NewBuildPage: React.FC = () => {
         body: JSON.stringify(modelArchitecture),
       });
 
+      // Reset button state
+      if (saveButton) {
+        saveButton.innerHTML = '<i class="fas fa-save"></i> Save Model';
+        saveButton.disabled = false;
+      }
+
       if (!response.ok) {
         const errorData = await response.json();
         console.error("Backend Error:", errorData);
-        alert(`Saving failed: ${errorData.error || "Unknown error"}`);
+
+        // Display a more detailed error message
+        const errorMessage =
+          errorData.error || "Unknown error occurred while saving the model";
+        alert(`Saving failed: ${errorMessage}`);
         return;
       }
 
@@ -459,17 +480,31 @@ const NewBuildPage: React.FC = () => {
           data.message.includes("Model architecture saved"))
       ) {
         setIsModelSaved(true);
-      }
 
-      // Display the exact message from the backend
-      if (data.message) {
-        alert(data.message);
+        // Display success message
+        alert(`Model saved successfully! ${data.message}`);
       } else {
-        alert("Model saved successfully!");
+        // Display the exact message from the backend
+        alert(data.message || "Model saved successfully!");
       }
     } catch (error) {
       console.error("Error saving model:", error);
-      alert(`An error occurred: ${error}`);
+
+      // Reset button state
+      const saveButton = document.querySelector(
+        ".save-button"
+      ) as HTMLButtonElement;
+      if (saveButton) {
+        saveButton.innerHTML = '<i class="fas fa-save"></i> Save Model';
+        saveButton.disabled = false;
+      }
+
+      // Display a more detailed error message
+      alert(
+        `An error occurred while saving the model: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
     }
   };
 
@@ -552,6 +587,37 @@ const NewBuildPage: React.FC = () => {
 
   // Function to add a new layer
   const addLayer = (type: string): void => {
+    // Get count of existing layers of this type to create a unique name
+    const existingLayersOfType = nodes.filter(
+      (node) => node.type?.toLowerCase() === type.toLowerCase()
+    ).length;
+
+    const layerNumber = existingLayersOfType + 1;
+
+    // Create a formatted layer name
+    const getDefaultLayerName = (type: string): string => {
+      switch (type.toLowerCase()) {
+        case "dense":
+          return `Dense Layer ${layerNumber}`;
+        case "convolution":
+          return `Conv2D Layer ${layerNumber}`;
+        case "maxpooling":
+          return `MaxPool2D Layer ${layerNumber}`;
+        case "flatten":
+          return `Flatten Layer ${layerNumber}`;
+        case "dropout":
+          return `Dropout Layer ${layerNumber}`;
+        case "batchnormalization":
+          return `BatchNorm Layer ${layerNumber}`;
+        case "attention":
+          return `Attention Layer ${layerNumber}`;
+        case "output":
+          return `Output Layer ${layerNumber}`;
+        default:
+          return `${type} Layer ${layerNumber}`;
+      }
+    };
+
     const defaultParams: Record<string, any> = {
       dense: { neurons: 64, activation: "None" },
       convolution: { filters: 32, kernelSize: [3, 3], stride: [1, 1] },
@@ -565,7 +631,10 @@ const NewBuildPage: React.FC = () => {
 
     const newNode: Node = {
       id: `${type}-${Date.now()}`,
-      data: { label: `${type} Layer`, ...defaultParams[type.toLowerCase()] },
+      data: {
+        label: getDefaultLayerName(type),
+        ...defaultParams[type.toLowerCase()],
+      },
       position: { x: Math.random() * 600, y: Math.random() * 400 },
       type: type.toLowerCase(),
     };
@@ -585,7 +654,11 @@ const NewBuildPage: React.FC = () => {
         },
         {
           id: "Dense-1",
-          data: { label: "Dense Layer", neurons: 64, activation: "ReLU" },
+          data: {
+            label: "Hidden Dense Layer",
+            neurons: 64,
+            activation: "ReLU",
+          },
           position: { x: 300, y: 200 },
           type: "dense",
         },
@@ -770,6 +843,7 @@ const NewBuildPage: React.FC = () => {
 
   const onNodeClick = (_: React.MouseEvent, node: Node): void => {
     setSelectedNode(node);
+    setActiveSidebarOption("layer_params");
   };
 
   // Validate layer parameters before saving or training
@@ -778,7 +852,8 @@ const NewBuildPage: React.FC = () => {
 
     // Check if dataset is selected
     if (!selectedDataset) {
-      errors.push("Please select a dataset");
+      errors.push("Please select a dataset before saving or training");
+      return errors;
     }
 
     // Check if there are at least two nodes (input and output)
@@ -794,11 +869,31 @@ const NewBuildPage: React.FC = () => {
     // Check if input layer exists
     if (!inputLayer) {
       errors.push("Model must have an input layer");
+    } else {
+      // Check if input layer is connected
+      const isInputConnected = edges.some(
+        (edge) => edge.source === inputLayer.id
+      );
+      if (!isInputConnected) {
+        errors.push(
+          `Input layer ${inputLayer.id} must have at least one outgoing connection`
+        );
+      }
     }
 
     // Check if output layer exists
     if (!outputLayer) {
       errors.push("Model must have an output layer");
+    } else {
+      // Check if output layer is connected
+      const isOutputConnected = edges.some(
+        (edge) => edge.target === outputLayer.id
+      );
+      if (!isOutputConnected) {
+        errors.push(
+          `Output layer ${outputLayer.id} must have at least one incoming connection`
+        );
+      }
     }
 
     // Check if all nodes are connected
@@ -826,109 +921,267 @@ const NewBuildPage: React.FC = () => {
     nodes.forEach((node) => {
       switch (node.type) {
         case "dense":
-          if (!node.data.neurons || node.data.neurons <= 0) {
+          if (!Number.isInteger(node.data.neurons) || node.data.neurons <= 0) {
             errors.push(
-              `Dense layer ${node.id}: Number of neurons must be greater than 0`
-            );
-          }
-          break;
-        case "convolution":
-          if (!node.data.filters || node.data.filters <= 0) {
-            errors.push(
-              `Convolution layer ${node.id}: Number of filters must be greater than 0`
+              `Dense layer ${node.id}: Number of neurons must be a positive integer`
             );
           }
           if (
-            !node.data.kernelSize ||
-            node.data.kernelSize.some((size: number) => size <= 0)
+            ![
+              "None",
+              "ReLU",
+              "Sigmoid",
+              "Softmax",
+              "Tanh",
+              "Leaky ReLU",
+            ].includes(node.data.activation)
+          ) {
+            errors.push(`Dense layer ${node.id}: Invalid activation function`);
+          }
+          break;
+        case "convolution":
+          if (!Number.isInteger(node.data.filters) || node.data.filters <= 0) {
+            errors.push(
+              `Convolution layer ${node.id}: Number of filters must be a positive integer`
+            );
+          }
+          if (
+            !Array.isArray(node.data.kernelSize) ||
+            node.data.kernelSize.length !== 2 ||
+            node.data.kernelSize.some(
+              (size: number) => !Number.isInteger(size) || size <= 0
+            )
           ) {
             errors.push(
-              `Convolution layer ${node.id}: Kernel size must be greater than 0`
+              `Convolution layer ${node.id}: Kernel size must be an array of two positive integers`
+            );
+          }
+          if (
+            !Array.isArray(node.data.stride) ||
+            node.data.stride.length !== 2 ||
+            node.data.stride.some(
+              (size: number) => !Number.isInteger(size) || size <= 0
+            )
+          ) {
+            errors.push(
+              `Convolution layer ${node.id}: Stride must be an array of two positive integers`
+            );
+          }
+          if (
+            !["None", "ReLU", "Sigmoid", "Tanh", "Leaky ReLU"].includes(
+              node.data.activation
+            )
+          ) {
+            errors.push(
+              `Convolution layer ${node.id}: Invalid activation function`
             );
           }
           break;
         case "maxpooling":
           if (
-            !node.data.poolSize ||
-            node.data.poolSize.some((size: number) => size <= 0)
+            !Array.isArray(node.data.poolSize) ||
+            node.data.poolSize.length !== 2 ||
+            node.data.poolSize.some(
+              (size: number) => !Number.isInteger(size) || size <= 0
+            )
           ) {
             errors.push(
-              `MaxPooling layer ${node.id}: Pool size must be greater than 0`
+              `MaxPooling layer ${node.id}: Pool size must be an array of two positive integers`
+            );
+          }
+          if (
+            !Array.isArray(node.data.stride) ||
+            node.data.stride.length !== 2 ||
+            node.data.stride.some(
+              (size: number) => !Number.isInteger(size) || size <= 0
+            )
+          ) {
+            errors.push(
+              `MaxPooling layer ${node.id}: Stride must be an array of two positive integers`
+            );
+          }
+          if (
+            !["valid", "same", "none"].includes(
+              node.data.padding?.toLowerCase()
+            )
+          ) {
+            errors.push(
+              `MaxPooling layer ${node.id}: Padding must be 'valid', 'same', or 'none'`
             );
           }
           break;
         case "dropout":
           if (
-            node.data.rate === undefined ||
+            typeof node.data.rate !== "number" ||
             node.data.rate < 0 ||
             node.data.rate >= 1
           ) {
             errors.push(
-              `Dropout layer ${node.id}: Rate must be between 0 and 1`
+              `Dropout layer ${node.id}: Rate must be a number between 0 and 1`
             );
           }
           break;
         case "batchnormalization":
           if (
-            node.data.momentum === undefined ||
+            typeof node.data.momentum !== "number" ||
             node.data.momentum <= 0 ||
             node.data.momentum >= 1
           ) {
             errors.push(
-              `BatchNormalization layer ${node.id}: Momentum must be between 0 and 1`
+              `BatchNormalization layer ${node.id}: Momentum must be a number between 0 and 1`
             );
           }
-          if (node.data.epsilon === undefined || node.data.epsilon <= 0) {
+          if (typeof node.data.epsilon !== "number" || node.data.epsilon <= 0) {
             errors.push(
-              `BatchNormalization layer ${node.id}: Epsilon must be greater than 0`
+              `BatchNormalization layer ${node.id}: Epsilon must be a positive number`
             );
           }
           break;
         case "attention":
-          if (!node.data.heads || node.data.heads <= 0) {
+          if (!Number.isInteger(node.data.heads) || node.data.heads <= 0) {
             errors.push(
-              `Attention layer ${node.id}: Number of heads must be greater than 0`
+              `Attention layer ${node.id}: Number of heads must be a positive integer`
             );
           }
-          if (!node.data.keyDim || node.data.keyDim <= 0) {
+          if (!Number.isInteger(node.data.keyDim) || node.data.keyDim <= 0) {
             errors.push(
-              `Attention layer ${node.id}: Key dimension must be greater than 0`
+              `Attention layer ${node.id}: Key dimension must be a positive integer`
+            );
+          }
+          if (
+            typeof node.data.dropout !== "number" ||
+            node.data.dropout < 0 ||
+            node.data.dropout >= 1
+          ) {
+            errors.push(
+              `Attention layer ${node.id}: Dropout rate must be a number between 0 and 1`
             );
           }
           break;
         case "output":
-          // Dataset-specific validations
-          if (
-            selectedDataset === "iris" ||
-            selectedDataset === "breast_cancer"
-          ) {
-            if (
-              node.data.activation !== "softmax" &&
-              node.data.activation !== "sigmoid"
-            ) {
-              errors.push(
-                `Output layer ${node.id}: For ${selectedDataset} dataset, activation should be 'softmax' or 'sigmoid'`
-              );
-            }
-          } else if (
-            selectedDataset === "mnist" ||
-            selectedDataset === "cifar10"
-          ) {
-            if (node.data.activation !== "softmax") {
-              errors.push(
-                `Output layer ${node.id}: For ${selectedDataset} dataset, activation should be 'softmax'`
-              );
-            }
-          } else if (selectedDataset === "california_housing") {
-            if (node.data.activation !== "linear") {
-              errors.push(
-                `Output layer ${node.id}: For ${selectedDataset} dataset, activation should be 'linear'`
-              );
-            }
+          if (!["None", "Sigmoid", "Softmax"].includes(node.data.activation)) {
+            errors.push(
+              `Output layer ${node.id}: Invalid activation function. Must be None, Sigmoid, or Softmax`
+            );
           }
           break;
       }
     });
+
+    // Dataset-specific validations
+    if (selectedDataset) {
+      // MNIST and CIFAR-10 specific validations
+      if (selectedDataset === "MNIST" || selectedDataset === "CIFAR-10") {
+        // Check if there's a convolutional layer for image datasets
+        const hasConvolutionLayer = nodes.some(
+          (node) => node.type === "convolution"
+        );
+
+        if (!hasConvolutionLayer) {
+          errors.push(
+            `${selectedDataset} dataset works best with at least one convolutional layer`
+          );
+        }
+
+        // Check if convolutional or maxpooling layers are followed by a flatten layer
+        const convOrPoolNodes = nodes.filter(
+          (node) => node.type === "convolution" || node.type === "maxpooling"
+        );
+
+        for (const node of convOrPoolNodes) {
+          // Find all edges from this node
+          const outgoingEdges = edges.filter((edge) => edge.source === node.id);
+
+          // Check if any of these edges connect to a flatten layer
+          const connectsToFlatten = outgoingEdges.some((edge) => {
+            const targetNode = nodes.find((n) => n.id === edge.target);
+            return targetNode && targetNode.type === "flatten";
+          });
+
+          if (!connectsToFlatten) {
+            errors.push(
+              `${node.type} layer ${node.id} should eventually connect to a Flatten layer`
+            );
+          }
+        }
+
+        // Output layer must use Softmax for classification
+        if (outputLayer && outputLayer.data.activation !== "Softmax") {
+          errors.push(
+            `Output layer must use Softmax activation for ${selectedDataset} dataset`
+          );
+        }
+      }
+
+      // Iris dataset specific validations
+      else if (selectedDataset === "Iris") {
+        // Check for incompatible layers
+        const incompatibleLayers = nodes.filter((node) =>
+          ["convolution", "maxpooling", "attention"].includes(node.type || "")
+        );
+
+        if (incompatibleLayers.length > 0) {
+          errors.push(
+            `Iris dataset is not compatible with: ${incompatibleLayers
+              .map((n) => n.type)
+              .join(", ")} layers`
+          );
+        }
+
+        // Output layer must use Softmax for multi-class classification
+        if (outputLayer && outputLayer.data.activation !== "Softmax") {
+          errors.push(
+            `Output layer must use Softmax activation for Iris dataset`
+          );
+        }
+      }
+
+      // Breast Cancer dataset specific validations
+      else if (selectedDataset === "Breast Cancer") {
+        // Check for incompatible layers
+        const incompatibleLayers = nodes.filter((node) =>
+          ["convolution", "maxpooling", "attention"].includes(node.type || "")
+        );
+
+        if (incompatibleLayers.length > 0) {
+          errors.push(
+            `Breast Cancer dataset is not compatible with: ${incompatibleLayers
+              .map((n) => n.type)
+              .join(", ")} layers`
+          );
+        }
+
+        // Output layer must use Sigmoid for binary classification
+        if (outputLayer && outputLayer.data.activation !== "Sigmoid") {
+          errors.push(
+            `Output layer must use Sigmoid activation for Breast Cancer dataset`
+          );
+        }
+      }
+
+      // California Housing dataset specific validations
+      else if (selectedDataset === "California Housing") {
+        // Check for incompatible layers
+        const incompatibleLayers = nodes.filter((node) =>
+          ["convolution", "maxpooling", "attention"].includes(node.type || "")
+        );
+
+        if (incompatibleLayers.length > 0) {
+          errors.push(
+            `California Housing dataset is not compatible with: ${incompatibleLayers
+              .map((n) => n.type)
+              .join(", ")} layers`
+          );
+        }
+
+        // Output layer should have no activation (linear) for regression
+        if (outputLayer && outputLayer.data.activation !== "None") {
+          errors.push(
+            `Output layer should have no activation (linear) for California Housing dataset`
+          );
+        }
+      }
+    }
 
     return errors;
   };
@@ -937,9 +1190,18 @@ const NewBuildPage: React.FC = () => {
   const displayValidationErrors = (errors: ValidationErrors) => {
     setValidationErrors(errors);
     setShowValidationErrors(true);
-    setTimeout(() => {
-      setShowValidationErrors(false);
-    }, 5000);
+
+    // Create a formatted error message for the alert
+    const errorMessage =
+      errors.length > 0
+        ? `Validation failed with the following errors:\n\n${errors.join("\n")}`
+        : "Validation failed!";
+
+    // Show alert with all errors
+    alert(errorMessage);
+
+    // Don't automatically hide validation errors - let the user close them manually
+    // This gives them time to read and fix the issues
   };
 
   // Render the content based on the active sidebar option
@@ -976,118 +1238,134 @@ const NewBuildPage: React.FC = () => {
         return (
           <div className="sidebar-content-section">
             <h3>Layer Parameters</h3>
-            <div className="layer-params-list">
-              {nodes.map((node) => (
-                <div
-                  key={node.id}
-                  className={`layer-params-item ${
-                    selectedNode?.id === node.id ? "selected" : ""
-                  }`}
-                  onClick={() => {
-                    setSelectedNode(node);
-                  }}
-                >
-                  <div className="layer-params-header">
-                    <span className="layer-params-type">{node.type}</span>
-                    <span className="layer-params-id">{node.id}</span>
-                  </div>
-                  <div className="layer-params-details">
-                    {node.type === "dense" && (
-                      <>
-                        <div className="param-item">
-                          <span className="param-label">Neurons:</span>
-                          <span className="param-value">
-                            {node.data.neurons}
-                          </span>
-                        </div>
-                        <div className="param-item">
-                          <span className="param-label">Activation:</span>
-                          <span className="param-value">
-                            {node.data.activation}
-                          </span>
-                        </div>
-                      </>
-                    )}
-                    {node.type === "convolution" && (
-                      <>
-                        <div className="param-item">
-                          <span className="param-label">Filters:</span>
-                          <span className="param-value">
-                            {node.data.filters}
-                          </span>
-                        </div>
-                        <div className="param-item">
-                          <span className="param-label">Kernel:</span>
-                          <span className="param-value">
-                            {node.data.kernelSize?.join("×")}
-                          </span>
-                        </div>
-                      </>
-                    )}
-                    {node.type === "maxpooling" && (
-                      <>
-                        <div className="param-item">
-                          <span className="param-label">Pool Size:</span>
-                          <span className="param-value">
-                            {node.data.poolSize?.join("×")}
-                          </span>
-                        </div>
-                        <div className="param-item">
-                          <span className="param-label">Stride:</span>
-                          <span className="param-value">
-                            {node.data.stride?.join("×")}
-                          </span>
-                        </div>
-                      </>
-                    )}
-                    {node.type === "dropout" && (
-                      <div className="param-item">
-                        <span className="param-label">Rate:</span>
-                        <span className="param-value">{node.data.rate}</span>
+            {!selectedNode ? (
+              <div className="no-layer-selected">
+                <p>
+                  <i className="fas fa-info-circle"></i> Select a layer from the
+                  canvas to view and edit its parameters.
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="layer-params-list">
+                  {nodes.map((node) => (
+                    <div
+                      key={node.id}
+                      className={`layer-params-item ${
+                        selectedNode?.id === node.id ? "selected" : ""
+                      }`}
+                      onClick={() => {
+                        setSelectedNode(node);
+                      }}
+                    >
+                      <div className="layer-params-header">
+                        <span className="layer-params-type">{node.type}</span>
+                        
                       </div>
-                    )}
-                    {node.type === "batchnormalization" && (
-                      <>
-                        <div className="param-item">
-                          <span className="param-label">Momentum:</span>
-                          <span className="param-value">
-                            {node.data.momentum}
-                          </span>
-                        </div>
-                        <div className="param-item">
-                          <span className="param-label">Epsilon:</span>
-                          <span className="param-value">
-                            {node.data.epsilon}
-                          </span>
-                        </div>
-                      </>
-                    )}
-                    {node.type === "attention" && (
-                      <>
-                        <div className="param-item">
-                          <span className="param-label">Heads:</span>
-                          <span className="param-value">{node.data.heads}</span>
-                        </div>
-                        <div className="param-item">
-                          <span className="param-label">Key Dim:</span>
-                          <span className="param-value">
-                            {node.data.keyDim}
-                          </span>
-                        </div>
-                      </>
-                    )}
-                    {node.type === "output" && (
-                      <div className="param-item">
-                        <span className="param-label">Activation:</span>
-                        <span className="param-value">
-                          {node.data.activation}
-                        </span>
+                      <div className="layer-params-details">
+                        {node.type === "dense" && (
+                          <>
+                            <div className="param-item">
+                              <span className="param-label">Neurons:</span>
+                              <span className="param-value">
+                                {node.data.neurons}
+                              </span>
+                            </div>
+                            <div className="param-item">
+                              <span className="param-label">Activation:</span>
+                              <span className="param-value">
+                                {node.data.activation}
+                              </span>
+                            </div>
+                          </>
+                        )}
+                        {node.type === "convolution" && (
+                          <>
+                            <div className="param-item">
+                              <span className="param-label">Filters:</span>
+                              <span className="param-value">
+                                {node.data.filters}
+                              </span>
+                            </div>
+                            <div className="param-item">
+                              <span className="param-label">Kernel:</span>
+                              <span className="param-value">
+                                {node.data.kernelSize?.join("×")}
+                              </span>
+                            </div>
+                          </>
+                        )}
+                        {node.type === "maxpooling" && (
+                          <>
+                            <div className="param-item">
+                              <span className="param-label">Pool Size:</span>
+                              <span className="param-value">
+                                {node.data.poolSize?.join("×")}
+                              </span>
+                            </div>
+                            <div className="param-item">
+                              <span className="param-label">Stride:</span>
+                              <span className="param-value">
+                                {node.data.stride?.join("×")}
+                              </span>
+                            </div>
+                          </>
+                        )}
+                        {node.type === "dropout" && (
+                          <div className="param-item">
+                            <span className="param-label">Rate:</span>
+                            <span className="param-value">
+                              {node.data.rate}
+                            </span>
+                          </div>
+                        )}
+                        {node.type === "batchnormalization" && (
+                          <>
+                            <div className="param-item">
+                              <span className="param-label">Momentum:</span>
+                              <span className="param-value">
+                                {node.data.momentum}
+                              </span>
+                            </div>
+                            <div className="param-item">
+                              <span className="param-label">Epsilon:</span>
+                              <span className="param-value">
+                                {node.data.epsilon}
+                              </span>
+                            </div>
+                          </>
+                        )}
+                        {node.type === "attention" && (
+                          <>
+                            <div className="param-item">
+                              <span className="param-label">Heads:</span>
+                              <span className="param-value">
+                                {node.data.heads}
+                              </span>
+                            </div>
+                            <div className="param-item">
+                              <span className="param-label">Key Dim:</span>
+                              <span className="param-value">
+                                {node.data.keyDim}
+                              </span>
+                            </div>
+                          </>
+                        )}
+                        {node.type === "output" && (
+                          <div className="param-item">
+                            <span className="param-label">Activation:</span>
+                            <span className="param-value">
+                              {node.data.activation}
+                            </span>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+                {renderNodeParameters()}
+              </>
+            )}
           </div>
         );
       case "templates":
@@ -1300,7 +1578,7 @@ const NewBuildPage: React.FC = () => {
       case "settings":
         return (
           <div className="sidebar-content-section">
-            <h3>Settings</h3>
+            <h3>Dataset</h3>
             <div className="settings-list">
               <div className="setting-item">
                 <label>Dataset</label>
@@ -1365,11 +1643,18 @@ const NewBuildPage: React.FC = () => {
         <div className="parameter-list">
           {/* Common parameters for all nodes */}
           <label>Layer Name:</label>
-          <input
-            type="text"
-            value={selectedNode.data.label || ""}
-            onChange={(e) => updateParameter("label", e.target.value)}
-          />
+          <div className="name-input-container">
+            <input
+              type="text"
+              value={selectedNode.data.label || ""}
+              onChange={(e) => updateParameter("label", e.target.value)}
+              placeholder="Enter custom layer name"
+              className="layer-name-input"
+            />
+            <small className="name-hint">
+              This name will appear on the layer in the canvas
+            </small>
+          </div>
 
           {/* Dense Layer */}
           {selectedNode.type === "dense" && (
@@ -1941,6 +2226,30 @@ const NewBuildPage: React.FC = () => {
   return (
     <div className="new-build-page">
       <div className="new-build-container">
+        {/* Validation Error Messages */}
+        {showValidationErrors && validationErrors.length > 0 && (
+          <div className="validation-errors-container">
+            <div className="validation-errors-header">
+              <i className="fas fa-exclamation-triangle"></i>
+              <span>Validation Errors</span>
+              <button
+                className="close-errors-btn"
+                onClick={() => setShowValidationErrors(false)}
+              >
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+            <ul className="validation-errors-list">
+              {validationErrors.map((error, index) => (
+                <li key={index} className="validation-error-item">
+                  <i className="fas fa-times-circle"></i>
+                  <span>{error}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         <div className="left-panel">
           <div className="sidebar-nav">
             <div
@@ -2007,10 +2316,7 @@ const NewBuildPage: React.FC = () => {
               <span>Settings</span>
             </div>
           </div>
-          <div className="sidebar-content">
-            {renderSidebarContent()}
-            {selectedNode && renderNodeParameters()}
-          </div>
+          <div className="sidebar-content">{renderSidebarContent()}</div>
         </div>
 
         <div className="center-panel">

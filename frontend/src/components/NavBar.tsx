@@ -10,7 +10,16 @@ const NavBar: React.FC = () => {
           <span className="brand-text">DND Neural Network</span>
         </div>
 
-
+        <div className="navbar-actions">
+          <NavLink
+            to="/tutorial"
+            className="tutorial-button"
+            title="Learn how to use DND Neural Network"
+          >
+            <i className="fas fa-question-circle"></i>
+            <span>Tutorial</span>
+          </NavLink>
+        </div>
       </div>
     </nav>
   );

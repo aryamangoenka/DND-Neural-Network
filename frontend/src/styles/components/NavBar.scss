@@ -86,6 +86,36 @@
     font-size: 1rem;
 }
 
+.navbar-actions {
+    display: flex;
+    align-items: center;
+}
+
+.tutorial-button {
+    background-color: #6610f2;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 12px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+}
+
+.tutorial-button:hover {
+    background-color: #520dc2;
+    color: white;
+}
+
+.tutorial-button i {
+    font-size: 1rem;
+}
+
 /* Responsive Adjustments */
 
 @media (max-width: 768px) {
@@ -100,5 +130,9 @@
     .nav-link {
         font-size: 0.9rem;
         padding: 6px 10px;
+    }
+    
+    .tutorial-button span {
+        display: none;
     }
 }

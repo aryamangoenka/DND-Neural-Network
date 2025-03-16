@@ -27,7 +27,7 @@ x_train, x_test, y_train, y_test = train_test_split(X_scaled, y_encoded, test_si
 # Define the model
 model = Sequential()
 model.add(Input(shape=(4,)))
-model.add(Dense(641, activation='relu'))
+model.add(Dense(128, activation='relu'))
 model.add(Dense(3, activation='softmax'))
 
 # Compile the model

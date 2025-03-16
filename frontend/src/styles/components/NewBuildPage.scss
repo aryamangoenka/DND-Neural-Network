@@ -791,11 +791,33 @@
   }
 }
 
-/* Node Parameters */
+/* Layer Parameters */
 .node-parameters {
   margin-top: 20px;
   padding-top: 20px;
   border-top: 1px solid #e9ecef;
+}
+
+.no-layer-selected {
+  background-color: #f8f9fa;
+  border-radius: 6px;
+  padding: 20px;
+  margin-top: 15px;
+  text-align: center;
+  border: 1px dashed #ced4da;
+}
+
+.no-layer-selected p {
+  color: #6c757d;
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.no-layer-selected i {
+  color: #0d6efd;
+  margin-right: 8px;
+  font-size: 1.1rem;
 }
 
 .node-parameters h3 {
@@ -834,6 +856,34 @@
 .input-group span {
   font-weight: 500;
   color: #495057;
+}
+
+/* Layer name input styling */
+.name-input-container {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 5px;
+}
+
+.layer-name-input {
+  padding: 8px 12px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+}
+
+.layer-name-input:focus {
+  border-color: #0d6efd;
+  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+  outline: none;
+}
+
+.name-hint {
+  color: #6c757d;
+  font-size: 0.8rem;
+  margin-top: 4px;
+  font-style: italic;
 }
 
 /* ReactFlow Customization */
@@ -1365,4 +1415,108 @@
   font-size: 0.9rem;
   color: #495057;
   font-style: italic;
+}
+
+/* Validation Errors */
+.validation-errors-container {
+  position: fixed;
+  top: 70px;
+  right: 20px;
+  width: 400px;
+  max-height: 80vh;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: slideInRight 0.3s ease-out;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.validation-errors-header {
+  background-color: #dc3545;
+  color: white;
+  padding: 12px 15px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 600;
+}
+
+.validation-errors-header i {
+  margin-right: 8px;
+  font-size: 1.1rem;
+}
+
+.close-errors-btn {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+}
+
+.close-errors-btn:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.validation-errors-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  max-height: 60vh;
+}
+
+.validation-error-item {
+  padding: 10px 15px;
+  border-bottom: 1px solid #f1f1f1;
+  display: flex;
+  align-items: flex-start;
+  color: #721c24;
+}
+
+.validation-error-item:last-child {
+  border-bottom: none;
+}
+
+.validation-error-item i {
+  color: #dc3545;
+  margin-right: 10px;
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+
+.validation-error-item span {
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+/* Responsive adjustments for validation errors */
+@media (max-width: 768px) {
+  .validation-errors-container {
+    width: 90%;
+    right: 5%;
+    left: 5%;
+  }
 } 

@@ -9,7 +9,7 @@ export const DenseNode = ({ data }: { data: any }) => (
       position={Position.Left}
       style={{ background: "#555" }}
     />
-    <h4>Dense Layer</h4>
+    <h4>{data.label || "Dense Layer"}</h4>
     <p>Neurons: {data.neurons}</p>
     <p>Activation: {data.activation}</p>
     <Handle
@@ -28,7 +28,7 @@ export const ConvolutionNode = ({ data }: { data: any }) => (
       position={Position.Left}
       style={{ background: "#555" }}
     />
-    <h4>Convolution Layer</h4>
+    <h4>{data.label || "Convolution Layer"}</h4>
     <p>Filters: {data.filters}</p>
     <p>Kernel Size: {data.kernelSize?.join("x")}</p>
     <p>Stride: {data.stride?.join("x")}</p>
@@ -49,7 +49,7 @@ export const MaxPoolingNode = ({ data }: { data: any }) => (
       position={Position.Left}
       style={{ background: "#555" }}
     />
-    <h4>MaxPooling Layer</h4>
+    <h4>{data.label || "MaxPooling Layer"}</h4>
     <p>Pool Size: {data.poolSize?.join("x")}</p>
     <p>Stride: {data.stride?.join("x")}</p>
     <p>Padding: {data.padding}</p>
@@ -62,14 +62,14 @@ export const MaxPoolingNode = ({ data }: { data: any }) => (
 );
 
 // Flatten Node
-export const FlattenNode = () => (
+export const FlattenNode = ({ data }: { data: any }) => (
   <div className="custom-node flatten-node">
     <Handle
       type="target"
       position={Position.Left}
       style={{ background: "#555" }}
     />
-    <h4>Flatten Layer</h4>
+    <h4>{data.label || "Flatten Layer"}</h4>
     <Handle
       type="source"
       position={Position.Right}
@@ -86,7 +86,7 @@ export const DropoutNode = ({ data }: { data: any }) => (
       position={Position.Left}
       style={{ background: "#555" }}
     />
-    <h4>Dropout Layer</h4>
+    <h4>{data.label || "Dropout Layer"}</h4>
     <p>Rate: {data.rate}</p>
     <Handle
       type="source"
@@ -104,7 +104,7 @@ export const BatchNormalizationNode = ({ data }: { data: any }) => (
       position={Position.Left}
       style={{ background: "#555" }}
     />
-    <h4>Batch Normalization Layer</h4>
+    <h4>{data.label || "Batch Normalization Layer"}</h4>
     <p>Momentum: {data.momentum}</p>
     <p>Epsilon: {data.epsilon}</p>
     <Handle
@@ -123,7 +123,7 @@ export const AttentionNode = ({ data }: { data: any }) => (
       position={Position.Left}
       style={{ background: "#555" }}
     />
-    <h4>Attention Layer</h4>
+    <h4>{data.label || "Attention Layer"}</h4>
     <p>Heads: {data.heads}</p>
     <p>Key Dim: {data.keyDim}</p>
     <p>Dropout: {data.dropout}</p>
@@ -138,8 +138,7 @@ export const AttentionNode = ({ data }: { data: any }) => (
 // Input Node
 export const InputNode = ({ data }: { data: any }) => (
   <div className="custom-node input-node">
-    <h4>Input Layer</h4>
-    <p>{data.label}</p>
+    <h4>{data.label || "Input Layer"}</h4>
     <Handle
       type="source"
       position={Position.Right}
@@ -156,7 +155,7 @@ export const OutputNode = ({ data }: { data: any }) => (
       position={Position.Left}
       style={{ background: "#555" }}
     />
-    <h4>Output Layer</h4>
+    <h4>{data.label || "Output Layer"}</h4>
     <p>Activation: {data.activation}</p>
   </div>
 );
