@@ -144,6 +144,13 @@ const NewBuildPage: React.FC = () => {
   const [confusionMatrix, setConfusionMatrix] = useState<number[][]>([]);
   const [chartKey, setChartKey] = useState<number>(0); // For forcing chart re-renders
 
+  // California Housing specific visualizations
+  const [heatmapImage, setHeatmapImage] = useState<string | null>(null);
+  const [residuals, setResiduals] = useState<number[]>([]);
+  const [predictedValues, setPredictedValues] = useState<number[]>([]);
+  const [rmse, setRmse] = useState<number | null>(null);
+  const [r2, setR2] = useState<number | null>(null);
+
   // Chart data objects
   const lossChartData = {
     labels,
@@ -230,7 +237,9 @@ const NewBuildPage: React.FC = () => {
       "Breast Cancer": [
         { value: "confusion_matrix", label: "Confusion Matrix" },
       ],
-      "California Housing": [],
+      "California Housing": [
+        { value: "heatmap", label: "Multicollinearity Heatmap" },
+      ],
     };
 
     // Combine default options with dataset-specific options
@@ -327,6 +336,33 @@ const NewBuildPage: React.FC = () => {
         setChartKey((prev) => prev + 1); // Force chart re-render
       } else {
         console.log("No Confusion Matrix in metrics");
+      }
+
+      // California Housing specific metrics
+      if (selectedDataset === "California Housing") {
+        // Set RMSE and R2 score if available
+        if (data.metrics?.rmse) setRmse(data.metrics.rmse);
+        if (data.metrics?.r2) setR2(data.metrics.r2);
+
+        // Set residuals and predicted values for residual plot
+        if (data.metrics?.residuals_plot) {
+          console.log(
+            "Residuals plot data received:",
+            data.metrics.residuals_plot
+          );
+          setPredictedValues(
+            data.metrics.residuals_plot.predicted_values || []
+          );
+          setResiduals(data.metrics.residuals_plot.residuals || []);
+        }
+
+        // Set heatmap image if available
+        if (data.metrics?.multicollinearity_heatmap) {
+          console.log("Multicollinearity heatmap received");
+          setHeatmapImage(
+            `data:image/png;base64,${data.metrics.multicollinearity_heatmap}`
+          );
+        }
       }
     });
 
@@ -545,6 +581,15 @@ const NewBuildPage: React.FC = () => {
 
     // Reset confusion matrix
     setConfusionMatrix([]);
+
+    // Reset California Housing specific visualizations
+    if (selectedDataset === "California Housing") {
+      setHeatmapImage(null);
+      setResiduals([]);
+      setPredictedValues([]);
+      setRmse(null);
+      setR2(null);
+    }
 
     // Prepare training payload with proper type conversions
     const trainingPayload = {
@@ -1260,7 +1305,6 @@ const NewBuildPage: React.FC = () => {
                     >
                       <div className="layer-params-header">
                         <span className="layer-params-type">{node.type}</span>
-                        
                       </div>
                       <div className="layer-params-details">
                         {node.type === "dense" && (
@@ -1517,60 +1561,104 @@ const NewBuildPage: React.FC = () => {
               <h3>Training Status</h3>
               <div className="status-item">
                 <span className="status-label">Status:</span>
-                <span className="status-value">
+                <span
+                  className={`status-value ${isTraining ? "training" : ""}`}
+                >
                   {isTraining ? "Training..." : "Not Training"}
                 </span>
               </div>
-              {isTraining && (
-                <>
-                  <div className="progress-bar-container">
-                    <div
-                      className="progress-bar"
-                      style={{
-                        width: `${
+
+              {/* Always show the progress bar, but keep it empty when not training */}
+              <div className="progress-bar-container">
+                <div
+                  className="progress-bar"
+                  style={{
+                    width: isTraining
+                      ? `${
                           (trainingProgress.currentEpoch /
                             trainingProgress.totalEpochs) *
                           100
-                        }%`,
-                      }}
-                    ></div>
-                  </div>
+                        }%`
+                      : "0%",
+                  }}
+                ></div>
+              </div>
+
+              {/* Always show metrics */}
+              <div className="status-item">
+                <span className="status-label">Epoch:</span>
+                <span className="status-value">
+                  {trainingProgress.currentEpoch > 0
+                    ? `${trainingProgress.currentEpoch}/${trainingProgress.totalEpochs}`
+                    : "N/A"}
+                </span>
+              </div>
+              <div className="status-item">
+                <span className="status-label">Loss:</span>
+                <span className="status-value">
+                  {trainingProgress.loss > 0
+                    ? trainingProgress.loss.toFixed(4)
+                    : "N/A"}
+                </span>
+              </div>
+              <div className="status-item">
+                <span className="status-label">Accuracy:</span>
+                <span className="status-value">
+                  {trainingProgress.accuracy > 0
+                    ? trainingProgress.accuracy.toFixed(4)
+                    : "N/A"}
+                </span>
+              </div>
+
+              {/* Always show validation metrics if they exist */}
+              <div className="status-item">
+                <span className="status-label">Val Loss:</span>
+                <span className="status-value">
+                  {trainingProgress.valLoss > 0
+                    ? trainingProgress.valLoss.toFixed(4)
+                    : "N/A"}
+                </span>
+              </div>
+              <div className="status-item">
+                <span className="status-label">Val Accuracy:</span>
+                <span className="status-value">
+                  {trainingProgress.valAccuracy > 0
+                    ? trainingProgress.valAccuracy.toFixed(4)
+                    : "N/A"}
+                </span>
+              </div>
+
+              {/* California Housing specific metrics */}
+              {selectedDataset === "California Housing" && (
+                <>
                   <div className="status-item">
-                    <span className="status-label">Epoch:</span>
+                    <span className="status-label">RMSE:</span>
                     <span className="status-value">
-                      {trainingProgress.currentEpoch}/
-                      {trainingProgress.totalEpochs}
+                      {rmse !== null ? rmse.toFixed(4) : "N/A"}
                     </span>
                   </div>
                   <div className="status-item">
-                    <span className="status-label">Loss:</span>
+                    <span className="status-label">R² Score:</span>
                     <span className="status-value">
-                      {trainingProgress.loss.toFixed(4)}
+                      {r2 !== null ? r2.toFixed(4) : "N/A"}
                     </span>
                   </div>
-                  <div className="status-item">
-                    <span className="status-label">Accuracy:</span>
-                    <span className="status-value">
-                      {trainingProgress.accuracy.toFixed(4)}
-                    </span>
-                  </div>
-                  {trainingProgress.valLoss !== undefined && (
-                    <>
-                      <div className="status-item">
-                        <span className="status-label">Val Loss:</span>
-                        <span className="status-value">
-                          {trainingProgress.valLoss.toFixed(4)}
-                        </span>
-                      </div>
-                      <div className="status-item">
-                        <span className="status-label">Val Accuracy:</span>
-                        <span className="status-value">
-                          {trainingProgress.valAccuracy.toFixed(4)}
-                        </span>
-                      </div>
-                    </>
-                  )}
                 </>
+              )}
+
+              {/* Add training controls when not training */}
+              {!isTraining && <div className="training-controls mt-3"></div>}
+
+              {/* Add stop button when training */}
+              {isTraining && (
+                <div className="training-controls mt-3">
+                  <button
+                    className="stop-button-sidebar"
+                    onClick={handleStopTraining}
+                  >
+                    <i className="fas fa-stop-circle"></i> Stop Training
+                  </button>
+                </div>
               )}
             </div>
           </div>
@@ -2013,6 +2101,47 @@ const NewBuildPage: React.FC = () => {
             )}
           </div>
         );
+      case "heatmap":
+        return (
+          <div className="visualization-container">
+            <h4>Multicollinearity Heatmap</h4>
+            <div
+              className="chart-container"
+              style={{ height: "auto", minHeight: "280px" }}
+            >
+              {heatmapImage ? (
+                <div className="heatmap-container">
+                  <img
+                    src={heatmapImage}
+                    alt="Multicollinearity Heatmap"
+                    style={{
+                      width: "100%",
+                      maxWidth: "800px",
+                      margin: "0 auto",
+                      display: "block",
+                    }}
+                  />
+                  {rmse !== null && r2 !== null && (
+                    <div className="regression-metrics">
+                      <div className="metric-item">
+                        <span className="metric-label">RMSE:</span>
+                        <span className="metric-value">{rmse.toFixed(4)}</span>
+                      </div>
+                      <div className="metric-item">
+                        <span className="metric-label">R² Score:</span>
+                        <span className="metric-value">{r2.toFixed(4)}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="empty-chart">
+                  <p>Train the model to generate a multicollinearity heatmap</p>
+                </div>
+              )}
+            </div>
+          </div>
+        );
       case "class_distribution":
         return (
           <div className="visualization-container">
@@ -2371,7 +2500,7 @@ const NewBuildPage: React.FC = () => {
             {/* Stop training button (only shown when training) */}
             {isTraining && (
               <button className="stop-button" onClick={handleStopTraining}>
-                Stop Training
+                <i className="fas fa-stop-circle"></i> Stop Training
               </button>
             )}
           </div>
@@ -2402,15 +2531,15 @@ const NewBuildPage: React.FC = () => {
             <h3>Export Model</h3>
             <div className="export-options">
               <button
-                className="export-button"
+                className="export-button python"
                 disabled={isTraining}
                 onClick={() => handleExport("py")}
                 title="Export model as a Python script with TensorFlow implementation"
               >
-                <i className="fas fa-file-code"></i> Python
+                <i className="fab fa-python"></i> Python
               </button>
               <button
-                className="export-button"
+                className="export-button keras"
                 disabled={isTraining}
                 onClick={() => handleExport("keras")}
                 title="Export as Keras .h5 model file"
@@ -2418,7 +2547,7 @@ const NewBuildPage: React.FC = () => {
                 <i className="fas fa-cube"></i> Keras
               </button>
               <button
-                className="export-button"
+                className="export-button pytorch"
                 disabled={isTraining}
                 onClick={() => handleExport("pytorch")}
                 title="Export model converted to PyTorch format"
@@ -2426,7 +2555,7 @@ const NewBuildPage: React.FC = () => {
                 <i className="fas fa-fire"></i> PyTorch
               </button>
               <button
-                className="export-button"
+                className="export-button savedmodel"
                 disabled={isTraining}
                 onClick={() => handleExport("savedmodel")}
                 title="Export as TensorFlow SavedModel format"
@@ -2434,7 +2563,7 @@ const NewBuildPage: React.FC = () => {
                 <i className="fas fa-save"></i> SavedModel
               </button>
               <button
-                className="export-button"
+                className="export-button notebook"
                 disabled={isTraining}
                 onClick={() => handleExport("ipynb")}
                 title="Export as Jupyter Notebook with model code and visualization"

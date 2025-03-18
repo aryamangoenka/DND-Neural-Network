@@ -25,7 +25,10 @@ const AppContent: React.FC = () => {
       <NavBar />
 
       {/* Main application content */}
-      <div className="container-fluid m-0 p-0" style={{ minHeight: "100vh" }}>
+      <div
+        className="container-fluid m-0 p-0"
+        style={{ minHeight: "100vh", paddingTop: "60px" }}
+      >
         {/* Define routes for different pages in the application */}
         <Routes>
           <Route path="/newbuild" element={<NewBuildPage />} />

@@ -621,7 +621,7 @@ const TutorialPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="tutorial-main">
+      <div className="tutorial-content-wrapper">
         {
           tutorialSections.find((section) => section.id === activeSection)
             ?.content

@@ -7,7 +7,8 @@ const NavBar: React.FC = () => {
     <nav className="navbar">
       <div className="container d-flex justify-content-between align-items-center">
         <div className="navbar-brand">
-          <span className="brand-text">DND Neural Network</span>
+          <i className="fas fa-brain brand-icon"></i>
+          <span className="brand-text">NeuroBlock</span>
         </div>
 
         <div className="navbar-actions">
