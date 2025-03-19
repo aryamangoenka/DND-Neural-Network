@@ -8,7 +8,7 @@ interface NodeData {
 }
 
 // Define the structure of validation errors
-type ValidationErrors = Record<string, Record<string, string>>;
+type ValidationErrors = string[];
 
 // Context Type Definition
 interface NewBuildPageContextType {
@@ -97,7 +97,7 @@ export const NewBuildPageProvider: React.FC<{ children: React.ReactNode }> = ({
   const [nodes, setNodes] = useState<Node<NodeData>[]>(blankTemplateNodes);
   const [edges, setEdges] = useState<Edge[]>(blankTemplateEdges);
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>(
-    {}
+    []
   );
   const [selectedDataset, setSelectedDataset] = useState<string>("");
   const [trainingConfig, setTrainingConfig] = useState<TrainingConfig>(

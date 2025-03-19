@@ -102,14 +102,16 @@ const NewBuildPage: React.FC = () => {
     setNodes,
     edges,
     setEdges,
+    validationErrors,
+    setValidationErrors,
     selectedDataset,
     setSelectedDataset,
+    trainingConfig,
+    setTrainingConfig,
     isTraining,
     setIsTraining,
     trainingProgress,
     setTrainingProgress,
-    trainingConfig,
-    setTrainingConfig,
   } = useNewBuildPageContext();
 
   // Socket.io reference
@@ -127,9 +129,6 @@ const NewBuildPage: React.FC = () => {
     useState<string>("accuracy");
 
   // Add these state variables with the other useState declarations
-  const [validationErrors, setValidationErrors] = useState<ValidationErrors>(
-    []
-  );
   const [showValidationErrors, setShowValidationErrors] =
     useState<boolean>(false);
 
@@ -1233,20 +1232,40 @@ const NewBuildPage: React.FC = () => {
 
   // Display validation errors
   const displayValidationErrors = (errors: ValidationErrors) => {
-    setValidationErrors(errors);
-    setShowValidationErrors(true);
+    // Only show errors if there are any
+    if (errors.length > 0) {
+      setShowValidationErrors(true);
+      // Auto-hide after 5 seconds
+      setTimeout(() => {
+        setShowValidationErrors(false);
+      }, 5000);
+    }
+  };
 
-    // Create a formatted error message for the alert
-    const errorMessage =
-      errors.length > 0
-        ? `Validation failed with the following errors:\n\n${errors.join("\n")}`
-        : "Validation failed!";
-
-    // Show alert with all errors
-    alert(errorMessage);
-
-    // Don't automatically hide validation errors - let the user close them manually
-    // This gives them time to read and fix the issues
+  // Helper function to get icon based on layer type
+  const getLayerIcon = (layerType: string): string => {
+    switch (layerType.toLowerCase()) {
+      case "dense":
+        return "fa-network-wired";
+      case "convolution":
+        return "fa-border-all";
+      case "maxpooling":
+        return "fa-filter";
+      case "flatten":
+        return "fa-compress-arrows-alt";
+      case "dropout":
+        return "fa-random";
+      case "batchnormalization":
+        return "fa-balance-scale";
+      case "attention":
+        return "fa-eye";
+      case "input":
+        return "fa-sign-in-alt";
+      case "output":
+        return "fa-sign-out-alt";
+      default:
+        return "fa-layer-group";
+    }
   };
 
   // Render the content based on the active sidebar option
@@ -1256,26 +1275,116 @@ const NewBuildPage: React.FC = () => {
         return (
           <div className="sidebar-content-section">
             <h3>Available Layers</h3>
+            <div className="layer-intro">
+              <div className="layer-intro-icon">
+                <i className="fas fa-puzzle-piece"></i>
+              </div>
+              <p>
+                Drag and drop these layers to design your neural network. Each
+                layer has specific properties that can be customized after
+                adding.
+              </p>
+            </div>
             <div className="layer-list">
-              {[
-                "Dense",
-                "Convolution",
-                "MaxPooling",
-                "Flatten",
-                "Dropout",
-                "BatchNormalization",
-                "Attention",
-              ].map((layerType) => (
-                <div key={layerType} className="layer-item">
-                  <span>{layerType}</span>
-                  <button
-                    className="add-button"
-                    onClick={() => addLayer(layerType)}
-                  >
-                    +
-                  </button>
-                </div>
-              ))}
+              <div className="layer-item dense-layer">
+                <span>
+                  <i className="fas fa-network-wired"></i> Dense
+                </span>
+                <button
+                  className="add-button"
+                  onClick={() => addLayer("Dense")}
+                >
+                  <i className="fas fa-plus"></i>
+                </button>
+              </div>
+              <div className="layer-item convolution-layer">
+                <span>
+                  <i className="fas fa-border-all"></i> Convolution
+                </span>
+                <button
+                  className="add-button"
+                  onClick={() => addLayer("Convolution")}
+                >
+                  <i className="fas fa-plus"></i>
+                </button>
+              </div>
+              <div className="layer-item maxpooling-layer">
+                <span>
+                  <i className="fas fa-filter"></i> MaxPooling
+                </span>
+                <button
+                  className="add-button"
+                  onClick={() => addLayer("MaxPooling")}
+                >
+                  <i className="fas fa-plus"></i>
+                </button>
+              </div>
+              <div className="layer-item flatten-layer">
+                <span>
+                  <i className="fas fa-compress-arrows-alt"></i> Flatten
+                </span>
+                <button
+                  className="add-button"
+                  onClick={() => addLayer("Flatten")}
+                >
+                  <i className="fas fa-plus"></i>
+                </button>
+              </div>
+              <div className="layer-item dropout-layer">
+                <span>
+                  <i className="fas fa-random"></i> Dropout
+                </span>
+                <button
+                  className="add-button"
+                  onClick={() => addLayer("Dropout")}
+                >
+                  <i className="fas fa-plus"></i>
+                </button>
+              </div>
+              <div className="layer-item batchnorm-layer">
+                <span>
+                  <i className="fas fa-balance-scale"></i> BatchNormalization
+                </span>
+                <button
+                  className="add-button"
+                  onClick={() => addLayer("BatchNormalization")}
+                >
+                  <i className="fas fa-plus"></i>
+                </button>
+              </div>
+              <div className="layer-item attention-layer">
+                <span>
+                  <i className="fas fa-eye"></i> Attention
+                </span>
+                <button
+                  className="add-button"
+                  onClick={() => addLayer("Attention")}
+                >
+                  <i className="fas fa-plus"></i>
+                </button>
+              </div>
+              <div className="layer-item input-layer">
+                <span>
+                  <i className="fas fa-sign-in-alt"></i> Input
+                </span>
+                <button
+                  className="add-button"
+                  onClick={() => addLayer("Input")}
+                >
+                  <i className="fas fa-plus"></i>
+                </button>
+              </div>
+              <div className="layer-item output-layer">
+                <span>
+                  <i className="fas fa-sign-out-alt"></i> Output
+                </span>
+                <button
+                  className="add-button"
+                  onClick={() => addLayer("Output")}
+                >
+                  <i className="fas fa-plus"></i>
+                </button>
+              </div>
             </div>
           </div>
         );
@@ -1284,12 +1393,24 @@ const NewBuildPage: React.FC = () => {
           <div className="sidebar-content-section">
             <h3>Layer Parameters</h3>
             {!selectedNode ? (
-              <div className="no-layer-selected">
-                <p>
-                  <i className="fas fa-info-circle"></i> Select a layer from the
-                  canvas to view and edit its parameters.
-                </p>
-              </div>
+              <>
+                <div className="layer-params-intro">
+                  <div className="layer-params-intro-icon">
+                    <i className="fas fa-sliders-h"></i>
+                  </div>
+                  <p>
+                    Customize your neural network layers by selecting a layer
+                    from the canvas. You can modify all parameters to fine-tune
+                    your model architecture.
+                  </p>
+                </div>
+                <div className="no-layer-selected">
+                  <p>
+                    <i className="fas fa-info-circle"></i> Select a layer from
+                    the canvas to view and edit its parameters.
+                  </p>
+                </div>
+              </>
             ) : (
               <>
                 <div className="layer-params-list">
@@ -1298,13 +1419,21 @@ const NewBuildPage: React.FC = () => {
                       key={node.id}
                       className={`layer-params-item ${
                         selectedNode?.id === node.id ? "selected" : ""
-                      }`}
+                      } ${node.type ? `${node.type}-params` : ""}`}
                       onClick={() => {
                         setSelectedNode(node);
                       }}
                     >
                       <div className="layer-params-header">
-                        <span className="layer-params-type">{node.type}</span>
+                        <span className="layer-params-type">
+                          <i
+                            className={`fas ${getLayerIcon(node.type || "")}`}
+                          ></i>
+                          {node.type &&
+                            node.type.charAt(0).toUpperCase() +
+                              node.type.slice(1)}{" "}
+                          Layer
+                        </span>
                       </div>
                       <div className="layer-params-details">
                         {node.type === "dense" && (
@@ -1416,24 +1545,72 @@ const NewBuildPage: React.FC = () => {
         return (
           <div className="sidebar-content-section">
             <h3>Model Templates</h3>
+            <div className="template-intro">
+              <div className="template-intro-icon">
+                <i className="fas fa-shapes"></i>
+              </div>
+              <p>
+                Start with pre-designed model architectures for common machine
+                learning tasks. Select a template that fits your needs and
+                customize it further.
+              </p>
+            </div>
             <div className="template-list">
-              {[
-                "Simple Feedforward",
-                "CNN",
-                "Transformer",
-                "Regression",
-                "Blank",
-              ].map((template) => (
-                <div key={template} className="template-item">
-                  <span>{template}</span>
-                  <button
-                    className="load-button"
-                    onClick={() => loadTemplate(template)}
-                  >
-                    Load
-                  </button>
-                </div>
-              ))}
+              <div className="template-item">
+                <span>
+                  <i className="fas fa-sitemap"></i> Simple Feedforward
+                </span>
+                <button
+                  className="load-button"
+                  onClick={() => loadTemplate("Simple Feedforward")}
+                >
+                  <i className="fas fa-download"></i> Load
+                </button>
+              </div>
+              <div className="template-item">
+                <span>
+                  <i className="fas fa-border-all"></i> CNN
+                </span>
+                <button
+                  className="load-button"
+                  onClick={() => loadTemplate("CNN")}
+                >
+                  <i className="fas fa-download"></i> Load
+                </button>
+              </div>
+              <div className="template-item">
+                <span>
+                  <i className="fas fa-project-diagram"></i> Transformer
+                </span>
+                <button
+                  className="load-button"
+                  onClick={() => loadTemplate("Transformer")}
+                >
+                  <i className="fas fa-download"></i> Load
+                </button>
+              </div>
+              <div className="template-item">
+                <span>
+                  <i className="fas fa-chart-line"></i> Regression
+                </span>
+                <button
+                  className="load-button"
+                  onClick={() => loadTemplate("Regression")}
+                >
+                  <i className="fas fa-download"></i> Load
+                </button>
+              </div>
+              <div className="template-item">
+                <span>
+                  <i className="fas fa-file"></i> Blank
+                </span>
+                <button
+                  className="load-button"
+                  onClick={() => loadTemplate("Blank")}
+                >
+                  <i className="fas fa-download"></i> Load
+                </button>
+              </div>
             </div>
           </div>
         );
@@ -1441,13 +1618,26 @@ const NewBuildPage: React.FC = () => {
         return (
           <div className="sidebar-content-section">
             <h3>Hyperparameters</h3>
-            <div className="settings-list">
+            <div className="hyperparams-intro">
+              <div className="hyperparams-intro-icon">
+                <i className="fas fa-cogs"></i>
+              </div>
+              <p>
+                Configure the key hyperparameters that control how your model
+                learns. These settings significantly impact your model's
+                performance and training speed.
+              </p>
+            </div>
+            <div className="settings-list hyperparams-list">
               <div className="setting-item">
-                <label>Batch Size</label>
+                <label>
+                  <i className="fas fa-layer-group"></i> Batch Size
+                </label>
                 <input
                   type="number"
                   min="1"
                   value={trainingConfig.batchSize}
+                  className="batch-size-input"
                   onChange={(e) =>
                     setTrainingConfig({
                       ...trainingConfig,
@@ -1457,7 +1647,9 @@ const NewBuildPage: React.FC = () => {
                 />
               </div>
               <div className="setting-item">
-                <label>Learning Rate</label>
+                <label>
+                  <i className="fas fa-tachometer-alt"></i> Learning Rate
+                </label>
                 <input
                   type="number"
                   min="0.0001"
@@ -1473,7 +1665,9 @@ const NewBuildPage: React.FC = () => {
                 />
               </div>
               <div className="setting-item">
-                <label>Epochs</label>
+                <label>
+                  <i className="fas fa-redo"></i> Epochs
+                </label>
                 <input
                   type="number"
                   min="1"
@@ -1493,196 +1687,239 @@ const NewBuildPage: React.FC = () => {
         return (
           <div className="sidebar-content-section">
             <h3>Training Options</h3>
-            <div className="settings-list">
-              <div className="setting-item">
-                <label>Optimizer</label>
-                <select
-                  value={trainingConfig.optimizer}
-                  onChange={(e) =>
-                    setTrainingConfig({
-                      ...trainingConfig,
-                      optimizer: e.target.value,
-                    })
-                  }
-                >
-                  <option value="Adam">Adam</option>
-                  <option value="SGD">SGD</option>
-                  <option value="RMSprop">RMSprop</option>
-                  <option value="Adagrad">Adagrad</option>
-                  <option value="Adadelta">Adadelta</option>
-                </select>
+            <div className="training-intro">
+              <div className="training-intro-icon">
+                <i className="fas fa-brain"></i>
               </div>
-              <div className="setting-item">
-                <label>Loss Function</label>
-                <select
-                  value={trainingConfig.lossFunction}
-                  onChange={(e) =>
-                    setTrainingConfig({
-                      ...trainingConfig,
-                      lossFunction: e.target.value,
-                    })
-                  }
-                >
-                  <option value="Categorical Cross-Entropy">
-                    Categorical Cross-Entropy
-                  </option>
-                  <option value="Binary Cross-Entropy">
-                    Binary Cross-Entropy
-                  </option>
-                  <option value="Mean Squared Error">Mean Squared Error</option>
-                  <option value="Mean Absolute Error">
-                    Mean Absolute Error
-                  </option>
-                  <option value="Sparse Categorical Cross-Entropy">
-                    Sparse Categorical Cross-Entropy
-                  </option>
-                </select>
+              <p>
+                Fine-tune your model's training process by selecting appropriate
+                algorithms and configuration for your specific task.
+              </p>
+            </div>
+
+            <div className="training-options-container">
+              {/* Optimizer Card */}
+              <div className="training-card optimizer-card">
+                <div className="training-card-header">
+                  <i className="fas fa-magic"></i>
+                  <span>Optimizer</span>
+                </div>
+                <div className="training-card-body">
+                  <select
+                    value={trainingConfig.optimizer}
+                    className="optimizer-select"
+                    onChange={(e) =>
+                      setTrainingConfig({
+                        ...trainingConfig,
+                        optimizer: e.target.value,
+                      })
+                    }
+                  >
+                    <option value="Adam">Adam</option>
+                    <option value="SGD">SGD</option>
+                    <option value="RMSprop">RMSprop</option>
+                    <option value="Adagrad">Adagrad</option>
+                    <option value="Adadelta">Adadelta</option>
+                  </select>
+                </div>
               </div>
-              <div className="setting-item">
-                <label>Validation Split</label>
-                <input
-                  type="number"
-                  min="0"
-                  max="0.5"
-                  step="0.05"
-                  value={trainingConfig.validationSplit || 0.2}
-                  onChange={(e) =>
-                    setTrainingConfig({
-                      ...trainingConfig,
-                      validationSplit: parseFloat(e.target.value) || 0.2,
-                    })
-                  }
-                />
+
+              {/* Loss Function Card */}
+              <div className="training-card loss-card">
+                <div className="training-card-header">
+                  <i className="fas fa-chart-line"></i>
+                  <span>Loss Function</span>
+                </div>
+                <div className="training-card-body">
+                  <select
+                    value={trainingConfig.lossFunction}
+                    className="loss-select"
+                    onChange={(e) =>
+                      setTrainingConfig({
+                        ...trainingConfig,
+                        lossFunction: e.target.value,
+                      })
+                    }
+                  >
+                    <option value="Categorical Cross-Entropy">
+                      Categorical Cross-Entropy
+                    </option>
+                    <option value="Binary Cross-Entropy">
+                      Binary Cross-Entropy
+                    </option>
+                    <option value="Mean Squared Error">
+                      Mean Squared Error
+                    </option>
+                    <option value="Mean Absolute Error">
+                      Mean Absolute Error
+                    </option>
+                    <option value="Sparse Categorical Cross-Entropy">
+                      Sparse Categorical Cross-Entropy
+                    </option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Validation Split Card */}
+              <div className="training-card validation-card">
+                <div className="training-card-header">
+                  <i className="fas fa-percentage"></i>
+                  <span>Validation Split</span>
+                </div>
+                <div className="training-card-body">
+                  <input
+                    type="number"
+                    min="0"
+                    max="0.5"
+                    step="0.05"
+                    value={trainingConfig.validationSplit || 0.2}
+                    onChange={(e) =>
+                      setTrainingConfig({
+                        ...trainingConfig,
+                        validationSplit: parseFloat(e.target.value) || 0.2,
+                      })
+                    }
+                  />
+                </div>
               </div>
             </div>
 
-            {/* Training Status Section - Keep in left panel */}
-            <div className="training-status mt-4">
-              <h3>Training Status</h3>
-              <div className="status-item">
-                <span className="status-label">Status:</span>
-                <span
-                  className={`status-value ${isTraining ? "training" : ""}`}
-                >
-                  {isTraining ? "Training..." : "Not Training"}
-                </span>
-              </div>
+            {/* Training Status Card */}
+            <div className="training-status-card">
+              <h3>
+                <i className="fas fa-chart-bar"></i>
+                Training Status
+              </h3>
 
-              {/* Always show the progress bar, but keep it empty when not training */}
-              <div className="progress-bar-container">
-                <div
-                  className="progress-bar"
-                  style={{
-                    width: isTraining
-                      ? `${
+              {/* Progress Bar */}
+              <div className="progress-container">
+                <div className="progress-info">
+                  <div className="progress-label">Training Progress</div>
+                  <div className="progress-percentage">
+                    {isTraining
+                      ? `${Math.round(
                           (trainingProgress.currentEpoch /
                             trainingProgress.totalEpochs) *
-                          100
-                        }%`
-                      : "0%",
-                  }}
-                ></div>
-              </div>
-
-              {/* Always show metrics */}
-              <div className="status-item">
-                <span className="status-label">Epoch:</span>
-                <span className="status-value">
-                  {trainingProgress.currentEpoch > 0
-                    ? `${trainingProgress.currentEpoch}/${trainingProgress.totalEpochs}`
-                    : "N/A"}
-                </span>
-              </div>
-              <div className="status-item">
-                <span className="status-label">Loss:</span>
-                <span className="status-value">
-                  {trainingProgress.loss > 0
-                    ? trainingProgress.loss.toFixed(4)
-                    : "N/A"}
-                </span>
-              </div>
-              <div className="status-item">
-                <span className="status-label">Accuracy:</span>
-                <span className="status-value">
-                  {trainingProgress.accuracy > 0
-                    ? trainingProgress.accuracy.toFixed(4)
-                    : "N/A"}
-                </span>
-              </div>
-
-              {/* Always show validation metrics if they exist */}
-              <div className="status-item">
-                <span className="status-label">Val Loss:</span>
-                <span className="status-value">
-                  {trainingProgress.valLoss > 0
-                    ? trainingProgress.valLoss.toFixed(4)
-                    : "N/A"}
-                </span>
-              </div>
-              <div className="status-item">
-                <span className="status-label">Val Accuracy:</span>
-                <span className="status-value">
-                  {trainingProgress.valAccuracy > 0
-                    ? trainingProgress.valAccuracy.toFixed(4)
-                    : "N/A"}
-                </span>
-              </div>
-
-              {/* California Housing specific metrics */}
-              {selectedDataset === "California Housing" && (
-                <>
-                  <div className="status-item">
-                    <span className="status-label">RMSE:</span>
-                    <span className="status-value">
-                      {rmse !== null ? rmse.toFixed(4) : "N/A"}
-                    </span>
+                            100
+                        )}%`
+                      : "0%"}
                   </div>
-                  <div className="status-item">
-                    <span className="status-label">R² Score:</span>
-                    <span className="status-value">
-                      {r2 !== null ? r2.toFixed(4) : "N/A"}
-                    </span>
-                  </div>
-                </>
-              )}
-
-              {/* Add training controls when not training */}
-              {!isTraining && <div className="training-controls mt-3"></div>}
-
-              {/* Add stop button when training */}
-              {isTraining && (
-                <div className="training-controls mt-3">
-                  <button
-                    className="stop-button-sidebar"
-                    onClick={handleStopTraining}
-                  >
-                    <i className="fas fa-stop-circle"></i> Stop Training
-                  </button>
                 </div>
-              )}
-            </div>
-          </div>
-        );
-      case "settings":
-        return (
-          <div className="sidebar-content-section">
-            <h3>Dataset</h3>
-            <div className="settings-list">
-              <div className="setting-item">
-                <label>Dataset</label>
-                <select
-                  value={selectedDataset}
-                  onChange={(e) => setSelectedDataset(e.target.value)}
-                >
-                  <option value="">Select Dataset</option>
-                  <option value="MNIST">MNIST</option>
-                  <option value="CIFAR-10">CIFAR-10</option>
-                  <option value="Iris">Iris</option>
-                  <option value="Breast Cancer">Breast Cancer</option>
-                  <option value="California Housing">California Housing</option>
-                </select>
+                <div className="progress-bar-container">
+                  <div
+                    className={`progress-bar ${isTraining ? "pulse" : ""}`}
+                    style={{
+                      width: isTraining
+                        ? `${
+                            (trainingProgress.currentEpoch /
+                              trainingProgress.totalEpochs) *
+                            100
+                          }%`
+                        : "0%",
+                    }}
+                  ></div>
+                </div>
               </div>
-              {/* More settings will be added later */}
+
+              {/* Metrics Grid */}
+              <div className="metrics-grid">
+                {/* Epoch */}
+                <div className="metric-item">
+                  <div className="metric-label">
+                    <i className="fas fa-history"></i>
+                    Epoch
+                  </div>
+                  <div
+                    className={`metric-value ${
+                      trainingProgress.currentEpoch > 0 ? "" : "na"
+                    }`}
+                  >
+                    {trainingProgress.currentEpoch > 0
+                      ? `${trainingProgress.currentEpoch}/${trainingProgress.totalEpochs}`
+                      : "N/A"}
+                  </div>
+                </div>
+
+                {/* Loss */}
+                <div className="metric-item">
+                  <div className="metric-label">
+                    <i className="fas fa-chart-line"></i>
+                    Loss
+                  </div>
+                  <div
+                    className={`metric-value ${
+                      trainingProgress.loss > 0 ? "warning" : "na"
+                    }`}
+                  >
+                    {trainingProgress.loss > 0
+                      ? trainingProgress.loss.toFixed(4)
+                      : "N/A"}
+                  </div>
+                </div>
+
+                {/* Accuracy */}
+                <div className="metric-item">
+                  <div className="metric-label">
+                    <i className="fas fa-bullseye"></i>
+                    Accuracy
+                  </div>
+                  <div
+                    className={`metric-value ${
+                      trainingProgress.accuracy > 0 ? "good" : "na"
+                    }`}
+                  >
+                    {trainingProgress.accuracy > 0
+                      ? trainingProgress.accuracy.toFixed(4)
+                      : "N/A"}
+                  </div>
+                </div>
+
+                {/* Val Loss */}
+                <div className="metric-item">
+                  <div className="metric-label">
+                    <i className="fas fa-chart-area"></i>
+                    Val Loss
+                  </div>
+                  <div
+                    className={`metric-value ${
+                      trainingProgress.valLoss > 0 ? "warning" : "na"
+                    }`}
+                  >
+                    {trainingProgress.valLoss > 0
+                      ? trainingProgress.valLoss.toFixed(4)
+                      : "N/A"}
+                  </div>
+                </div>
+
+                {/* Val Accuracy */}
+                <div className="metric-item">
+                  <div className="metric-label">
+                    <i className="fas fa-check-circle"></i>
+                    Val Accuracy
+                  </div>
+                  <div
+                    className={`metric-value ${
+                      trainingProgress.valAccuracy > 0 ? "good" : "na"
+                    }`}
+                  >
+                    {trainingProgress.valAccuracy > 0
+                      ? trainingProgress.valAccuracy.toFixed(4)
+                      : "N/A"}
+                  </div>
+                </div>
+
+                {/* Stop button when training */}
+                {isTraining && (
+                  <div className="metric-item" style={{ gridColumn: "span 2" }}>
+                    <button
+                      className="stop-button-sidebar"
+                      onClick={handleStopTraining}
+                    >
+                      <i className="fas fa-stop-circle"></i> Stop Training
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         );
@@ -1690,29 +1927,211 @@ const NewBuildPage: React.FC = () => {
         return (
           <div className="sidebar-content-section">
             <h3>Model Configuration</h3>
-            <div className="info-item">
-              <span className="info-label">Dataset:</span>
-              <span className="info-value">{selectedDataset || "None"}</span>
+            <div className="model-config-intro">
+              <div className="model-config-intro-icon">
+                <i className="fas fa-project-diagram"></i>
+              </div>
+              <p>
+                View your model's configuration settings and key parameters for
+                building and training your neural network.
+              </p>
             </div>
-            <div className="info-item">
-              <span className="info-label">Optimizer:</span>
-              <span className="info-value">{trainingConfig.optimizer}</span>
+
+            <div className="model-config-container compact-config">
+              {/* Data Section */}
+              <div className="model-config-section">
+                <h4>
+                  <i className="fas fa-database"></i> Data
+                </h4>
+                <div className="model-config-grid">
+                  <div className="model-config-item">
+                    <span className="model-config-label">
+                      <i className="fas fa-table"></i> Dataset
+                    </span>
+                    <span className="model-config-value dataset">
+                      {selectedDataset
+                        ? selectedDataset
+                        : "No dataset selected"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Training Section */}
+              <div className="model-config-section">
+                <h4>
+                  <i className="fas fa-sliders-h"></i> Training
+                </h4>
+                <div className="model-config-grid">
+                  <div className="model-config-item">
+                    <span className="model-config-label">
+                      <i className="fas fa-cog"></i> Optimizer
+                    </span>
+                    <span className="model-config-value optimizer">
+                      {trainingConfig.optimizer}
+                    </span>
+                  </div>
+
+                  <div className="model-config-item">
+                    <span className="model-config-label">
+                      <i className="fas fa-chart-line"></i> Loss
+                    </span>
+                    <span className="model-config-value loss">
+                      {trainingConfig.lossFunction}
+                    </span>
+                  </div>
+
+                  <div className="model-config-item">
+                    <span className="model-config-label">
+                      <i className="fas fa-layer-group"></i> Batch Size
+                    </span>
+                    <span className="model-config-value compact">
+                      {trainingConfig.batchSize}
+                    </span>
+                  </div>
+
+                  <div className="model-config-item">
+                    <span className="model-config-label">
+                      <i className="fas fa-tachometer-alt"></i> Learning Rate
+                    </span>
+                    <span className="model-config-value compact">
+                      {trainingConfig.learningRate}
+                    </span>
+                  </div>
+                </div>
+
+                <div
+                  className="model-config-grid"
+                  style={{ marginTop: "15px" }}
+                >
+                  <div className="model-config-item">
+                    <span className="model-config-label">
+                      <i className="fas fa-redo"></i> Epochs
+                    </span>
+                    <span className="model-config-value">
+                      {trainingConfig.epochs}
+                    </span>
+                  </div>
+
+                  <div className="model-config-item">
+                    <span className="model-config-label">
+                      <i className="fas fa-random"></i> Validation Split
+                    </span>
+                    <span className="model-config-value">
+                      {trainingConfig.validationSplit * 100}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Architecture Section */}
+              <div className="model-config-section">
+                <h4>
+                  <i className="fas fa-network-wired"></i> Architecture
+                </h4>
+                <div className="model-config-grid">
+                  <div className="model-config-item">
+                    <span className="model-config-label">
+                      <i className="fas fa-cubes"></i> Layers
+                    </span>
+                    <span className="model-config-value">{nodes.length}</span>
+                  </div>
+                  <div className="model-config-item">
+                    <span className="model-config-label">
+                      <i className="fas fa-project-diagram"></i> Connections
+                    </span>
+                    <span className="model-config-value">{edges.length}</span>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="info-item">
-              <span className="info-label">Loss Function:</span>
-              <span className="info-value">{trainingConfig.lossFunction}</span>
+          </div>
+        );
+      case "settings":
+        return (
+          <div className="sidebar-content-section">
+            <h3>Dataset Settings</h3>
+            <div className="settings-intro">
+              <div className="settings-intro-icon">
+                <i className="fas fa-database"></i>
+              </div>
+              <p>
+                Select a dataset to train your neural network. The dataset will
+                determine the input and output dimensions for your model.
+              </p>
             </div>
-            <div className="info-item">
-              <span className="info-label">Batch Size:</span>
-              <span className="info-value">{trainingConfig.batchSize}</span>
-            </div>
-            <div className="info-item">
-              <span className="info-label">Learning Rate:</span>
-              <span className="info-value">{trainingConfig.learningRate}</span>
-            </div>
-            <div className="info-item">
-              <span className="info-label">Epochs:</span>
-              <span className="info-value">{trainingConfig.epochs}</span>
+
+            <div className="training-options-container">
+              {/* Dataset Selection Card */}
+              <div className="training-card dataset-card">
+                <div className="training-card-header">
+                  <i className="fas fa-table"></i>
+                  <span>Dataset</span>
+                </div>
+                <div className="training-card-body">
+                  <select
+                    value={selectedDataset}
+                    onChange={(e) => setSelectedDataset(e.target.value)}
+                    className="dataset-select"
+                  >
+                    <option value="">Select Dataset</option>
+                    <option value="MNIST">MNIST</option>
+                    <option value="CIFAR-10">CIFAR-10</option>
+                    <option value="Iris">Iris</option>
+                    <option value="Breast Cancer">Breast Cancer</option>
+                    <option value="California Housing">
+                      California Housing
+                    </option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Dataset Info Card */}
+              {selectedDataset && (
+                <div className="training-card dataset-info-card">
+                  <div className="training-card-header">
+                    <i className="fas fa-info-circle"></i>
+                    <span>Dataset Information</span>
+                  </div>
+                  <div className="training-card-body">
+                    <div className="dataset-info-content">
+                      {selectedDataset === "MNIST" && (
+                        <p>
+                          A database of handwritten digits with 60,000 training
+                          examples and 10,000 test examples. Each image is 28x28
+                          pixels (grayscale).
+                        </p>
+                      )}
+                      {selectedDataset === "CIFAR-10" && (
+                        <p>
+                          A collection of 60,000 32x32 color images in 10
+                          different classes, with 6,000 images per class.
+                        </p>
+                      )}
+                      {selectedDataset === "Iris" && (
+                        <p>
+                          A classic dataset containing 3 classes of 50 instances
+                          each, where each class refers to a type of iris plant.
+                        </p>
+                      )}
+                      {selectedDataset === "Breast Cancer" && (
+                        <p>
+                          Features are computed from a digitized image of a fine
+                          needle aspirate of a breast mass. The task is to
+                          classify whether the mass is malignant or benign.
+                        </p>
+                      )}
+                      {selectedDataset === "California Housing" && (
+                        <p>
+                          This dataset contains information about house prices
+                          in California, with features including median income,
+                          house age, and average rooms.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         );
@@ -2360,9 +2779,9 @@ const NewBuildPage: React.FC = () => {
           <div className="validation-errors-container">
             <div className="validation-errors-header">
               <i className="fas fa-exclamation-triangle"></i>
-              <span>Validation Errors</span>
+              <h3>Validation Errors</h3>
               <button
-                className="close-errors-btn"
+                className="close-validation-errors"
                 onClick={() => setShowValidationErrors(false)}
               >
                 <i className="fas fa-times"></i>
@@ -2511,18 +2930,21 @@ const NewBuildPage: React.FC = () => {
               <label htmlFor="visualization-select">
                 Select Visualization:
               </label>
-              <select
-                id="visualization-select"
-                value={selectedVisualization}
-                onChange={(e) => setSelectedVisualization(e.target.value)}
-                disabled={!selectedDataset}
-              >
-                {getVisualizationOptions().map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+              <div className="custom-select-container">
+                <select
+                  id="visualization-select"
+                  value={selectedVisualization}
+                  onChange={(e) => setSelectedVisualization(e.target.value)}
+                  disabled={!selectedDataset}
+                  className="visualization-select"
+                >
+                  {getVisualizationOptions().map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
             {renderVisualization()}
           </div>

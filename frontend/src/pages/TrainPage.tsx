@@ -88,7 +88,7 @@ const TrainPage = (): JSX.Element => {
     setChartKey((prev) => prev + 1); // Clear previous val accuracy data
 
     setPredictedValues([]);
-    setHeatmapImage("")
+    setHeatmapImage("");
     setResidualsChartData({ datasets: [] });
     setResiduals([]);
     setLabels([]); // Clear epoch labels
@@ -462,13 +462,19 @@ const TrainPage = (): JSX.Element => {
       <div className="left-sidebar">
         <h2>Configuration</h2>
         {/* Configuration Section */}
-        {/* Add your dataset, loss function, optimizer, hyperparameter inputs */}
         <div className="config-section">
-          <label>Dataset: {dataset || "No dataset selected"}</label>
+          <label>
+            <i className="fas fa-database"></i> Dataset
+          </label>
+          <div className="selected-dataset">
+            {dataset || "No dataset selected"}
+          </div>
         </div>
 
         <div className="config-section">
-          <h3>Loss Function</h3>
+          <h3>
+            <i className="fas fa-chart-line"></i> Loss Function
+          </h3>
           <select
             value={lossFunction}
             onChange={(e) => setLossFunction(e.target.value)}
@@ -484,7 +490,9 @@ const TrainPage = (): JSX.Element => {
         </div>
 
         <div className="config-section">
-          <h3>Optimizer</h3>
+          <h3>
+            <i className="fas fa-cogs"></i> Optimizer
+          </h3>
           <select
             value={optimizer}
             onChange={(e) => setOptimizer(e.target.value)}
@@ -495,15 +503,64 @@ const TrainPage = (): JSX.Element => {
             <option value="Adagrad">Adagrad</option>
           </select>
         </div>
+
+        <div className="config-section-1">
+          <h3>Hyperparameters</h3>
+
+          <label>
+            <i className="fas fa-tachometer-alt"></i> Learning Rate:
+          </label>
+          <input
+            type="number"
+            value={learningRate}
+            onChange={(e) => setLearningRate(+e.target.value)}
+            step="0.0001"
+          />
+
+          <label>
+            <i className="fas fa-layer-group"></i> Batch Size:
+          </label>
+          <input
+            type="number"
+            value={batchSize}
+            onChange={(e) => setBatchSize(+e.target.value)}
+            min="1"
+          />
+
+          <label>
+            <i className="fas fa-history"></i> Epochs:
+          </label>
+          <input
+            type="number"
+            value={epochs}
+            onChange={(e) => setEpochs(+e.target.value)}
+            min="1"
+          />
+        </div>
       </div>
 
       <div className="main-content">
-        <div className="progress-bar">
-          <div
-            className="progress-bar-fill text-light"
-            style={{ width: `${trainingProgress}%` }}
-          >
-            {trainingProgress.toFixed(2)}%
+        <div className="training-header">
+          <h2>
+            <i className="fas fa-brain"></i> Model Training
+            {isTraining && (
+              <span className="training-badge">Training in progress</span>
+            )}
+          </h2>
+        </div>
+
+        <div className="progress-section">
+          <div className="progress-info">
+            <span>Training Progress:</span>
+            <span>{trainingProgress.toFixed(2)}%</span>
+          </div>
+          <div className="progress-bar">
+            <div
+              className="progress-bar-fill text-light"
+              style={{ width: `${trainingProgress}%` }}
+            >
+              {trainingProgress > 5 ? `${trainingProgress.toFixed(0)}%` : ""}
+            </div>
           </div>
         </div>
 
@@ -512,30 +569,41 @@ const TrainPage = (): JSX.Element => {
           {dataset !== "California Housing" && (
             <div className="non-cali-visualizations">
               {/* Loss and Accuracy Graphs */}
-              {/* Loss and Accuracy Graphs */}
               <div className="charts-row">
                 <div className="chart-small">
-                  <h3>Loss Over Time</h3>
+                  <h3>
+                    <i className="fas fa-chart-line"></i> Loss Over Time
+                  </h3>
                   <Line data={lossChartData} options={chartOptions} />
                 </div>
                 <div className="chart-small">
-                  <h3>Accuracy Over Time</h3>
+                  <h3>
+                    <i className="fas fa-bullseye"></i> Accuracy Over Time
+                  </h3>
                   <Line data={accuracyChartData} options={chartOptions} />
                 </div>
               </div>
 
               {/* Confusion Matrix */}
-
-              {confusionMatrix ? (
-                <ConfusionMatrix
-                  matrix={confusionMatrix}
-                  labels={getClassLabels(dataset)}
-                />
-              ) : (
-                <p style={{ color: "grey" }}>
-                  Confusion matrix is not available yet.
-                </p>
-              )}
+              <div className="matrix-container">
+                <h3>
+                  <i className="fas fa-th"></i> Confusion Matrix
+                </h3>
+                {confusionMatrix ? (
+                  <ConfusionMatrix
+                    matrix={confusionMatrix}
+                    labels={getClassLabels(dataset)}
+                  />
+                ) : (
+                  <div className="empty-state">
+                    <i className="fas fa-chart-pie fa-3x"></i>
+                    <p>
+                      Confusion matrix will appear here once training has
+                      started
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -548,12 +616,16 @@ const TrainPage = (): JSX.Element => {
                 {/* Smaller Loss Graph on Top */}
                 <div className="loss-chart-wrapper">
                   <div className="chart-small">
-                    <h3>Loss Over Time</h3>
+                    <h3>
+                      <i className="fas fa-chart-line"></i> Loss Over Time
+                    </h3>
                     <Line data={lossChartData} options={chartOptions} />
                   </div>
                 </div>
                 <div className="residuals-chart-wrapper">
-                  <h4>Residuals Plot</h4>
+                  <h4>
+                    <i className="fas fa-chart-bar"></i> Residuals Plot
+                  </h4>
                   {residualsChartData ? (
                     <Line
                       key={`residuals-${chartKey}`}
@@ -584,14 +656,22 @@ const TrainPage = (): JSX.Element => {
                       }}
                     />
                   ) : (
-                    <p>Residuals Plot not available.</p>
+                    <div className="empty-state">
+                      <i className="fas fa-chart-bar fa-3x"></i>
+                      <p>
+                        Residuals Plot will appear here once training has
+                        started
+                      </p>
+                    </div>
                   )}
                 </div>
               </div>
 
               <div className="regression-charts-container">
                 <div className="chart-wrapper">
-                  <h4>Multicollinearity Heatmap</h4>
+                  <h4>
+                    <i className="fas fa-th"></i> Multicollinearity Heatmap
+                  </h4>
                   <div>
                     {heatmapImage ? (
                       <img
@@ -600,7 +680,12 @@ const TrainPage = (): JSX.Element => {
                         style={{ width: "100%", maxWidth: "800px" }}
                       />
                     ) : (
-                      <p>Multicollinearity Heatmap not available.</p>
+                      <div className="empty-state">
+                        <i className="fas fa-th fa-3x"></i>
+                        <p>
+                          Heatmap will appear here once training has started
+                        </p>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -611,62 +696,64 @@ const TrainPage = (): JSX.Element => {
       </div>
 
       <div className="right-sidebar">
-        <h2>Training Status</h2>
+        <h2>Training Control</h2>
         <div className="button-container">
           <button
-            className="button"
+            className={`button ${isTraining ? "training" : ""}`}
             onClick={handleTrain}
             disabled={isTraining}
           >
-            {isTraining ? "Training..." : "Start Training"}
+            {isTraining ? (
+              <>
+                <i className="fas fa-spinner fa-spin"></i> Training...
+              </>
+            ) : (
+              <>
+                <i className="fas fa-play"></i> Start Training
+              </>
+            )}
           </button>
-          <div style={{ fontWeight: 600 }}>
-            <p>Batch Progress: {trainingProgress.toFixed(2)}%</p>
-            <p>Loss: {liveMetrics.loss?.toFixed(6) || "N/A"}</p>
-            <p>Validation Loss: {liveMetrics.val_loss?.toFixed(6) || "N/A"}</p>
+
+          <div className="metrics-container">
+            <h3>
+              <i className="fas fa-chart-bar"></i> Live Metrics
+            </h3>
+
+            <p>
+              Batch Progress: <span>{trainingProgress.toFixed(2)}%</span>
+            </p>
+            <p>
+              Loss: <span>{liveMetrics.loss?.toFixed(6) || "N/A"}</span>
+            </p>
+            <p>
+              Validation Loss:{" "}
+              <span>{liveMetrics.val_loss?.toFixed(6) || "N/A"}</span>
+            </p>
+
+            {dataset !== "California Housing" && (
+              <>
+                <p>
+                  Accuracy:{" "}
+                  <span>{liveMetrics.accuracy?.toFixed(6) || "N/A"}</span>
+                </p>
+                <p>
+                  Validation Accuracy:{" "}
+                  <span>{liveMetrics.val_accuracy?.toFixed(6) || "N/A"}</span>
+                </p>
+              </>
+            )}
+
+            {dataset === "California Housing" && (
+              <>
+                <p>
+                  RMSE: <span>{rmse !== null ? rmse.toFixed(4) : "N/A"}</span>
+                </p>
+                <p>
+                  R² Score: <span>{r2 !== null ? r2.toFixed(4) : "N/A"}</span>
+                </p>
+              </>
+            )}
           </div>
-          {dataset !== "California Housing" && (
-            <div style={{ fontWeight: 600 }}>
-              <p>Accuracy: {liveMetrics.accuracy?.toFixed(6) || "N/A"}</p>
-
-              <p>
-                Validation Accuracy:{" "}
-                {liveMetrics.val_accuracy?.toFixed(6) || "N/A"}
-              </p>
-            </div>
-          )}
-          {dataset === "California Housing" && (
-            <>
-              <p>RMSE: {rmse !== null ? rmse.toFixed(4) : "N/A"}</p>
-              <p>R² Score: {r2 !== null ? r2.toFixed(4) : "N/A"}</p>
-            </>
-          )}
-        </div>
-        <div className="config-section-1">
-          <h3>Hyperparameters</h3>
-          <label>Learning Rate:</label>
-          <input
-            type="number"
-            value={learningRate}
-            onChange={(e) => setLearningRate(+e.target.value)}
-            step="0.0001"
-          />
-
-          <label>Batch Size:</label>
-          <input
-            type="number"
-            value={batchSize}
-            onChange={(e) => setBatchSize(+e.target.value)}
-            min="1"
-          />
-
-          <label>Epochs:</label>
-          <input
-            type="number"
-            value={epochs}
-            onChange={(e) => setEpochs(+e.target.value)}
-            min="1"
-          />
         </div>
       </div>
     </div>
